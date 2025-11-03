@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTC Auto Trading Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        .status-active {
+            background: #28a745;
+        }
+        
+        .status-inactive {
+            background: #dc3545;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            color: #ffd700;
+            border-bottom: 2px solid #ffd700;
+            padding-bottom: 5px;
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 8px 0;
+        }
+        
+        .metric-label {
+            font-weight: 500;
+            opacity: 0.9;
+        }
+        
+        .metric-value {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .positive {
+            color: #28a745;
+        }
+        
+        .negative {
+            color: #dc3545;
+        }
+        
+        .neutral {
+            color: #ffc107;
+        }
+        
+        .large-metric {
+            text-align: center;
+            padding: 20px;
+            margin: 15px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        
+        .large-metric .value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .large-metric .label {
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+        
+        .refresh-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #ffd700;
+            color: #1e3c72;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+        }
+        
+        .loading {
+            text-align: center;
+            font-size: 1.2rem;
+            opacity: 0.7;
+            margin: 20px 0;
+        }
+        
+        .error {
+            background: rgba(220, 53, 69, 0.2);
+            border: 1px solid #dc3545;
+            color: #ff6b6b;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .last-updated {
+            text-align: center;
+            opacity: 0.7;
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .large-metric .value {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 BTC Auto Trading Dashboard</h1>
+            <div id="tradingStatus" class="status-indicator">
+                <span id="statusText">Loading...</span>
+            </div>
+        </div>
+        
+        <div id="loadingMessage" class="loading">
+            Loading trading analysis...
+        </div>
+        
+        <div id="errorMessage" class="error" style="display: none;">
+            Failed to load trading data. Please check if the trading system is running.
+        </div>
+        
+        <div id="dashboardContent" style="display: none;">
+            <div class="dashboard-grid">
+                <!-- Current Price Card -->
+                <div class="card">
+                    <h3>💰 Current Market</h3>
+                    <div class="large-metric">
+                        <div id="currentPrice" class="value">£--,---</div>
+                        <div class="label">BTC Price</div>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Trading Status:</span>
+                        <span id="tradingStatusText" class="metric-value">--</span>
+                    </div>
+                </div>
+                
+                <!-- Holdings Card -->
+                <div class="card">
+                    <h3>📦 Holdings</h3>
+                    <div class="metric">
+                        <span class="metric-label">BTC Amount:</span>
+                        <span id="btcAmount" class="metric-value">-- BTC</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">BTC Value:</span>
+                        <span id="btcValue" class="metric-value">£--</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Appreciation:</span>
+                        <span id="appreciation" class="metric-value">£--</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">GBP Cash:</span>
+                        <span id="gbpCash" class="metric-value">£--</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Total Value Change:</span>
+                        <span id="valueChange" class="metric-value">£--</span>
+                    </div>
+                </div>
+                
+                <!-- Profit Analysis Card -->
+                <div class="card">
+                    <h3>💵 Profit Analysis</h3>
+                    <div class="large-metric">
+                        <div id="currentProfit" class="value">£--</div>
+                        <div class="label">Current Profit (unrealized)</div>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Needed for Target:</span>
+                        <span id="neededProfit" class="metric-value">£-- (---%)</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">BTC Price Needed:</span>
+                        <span id="priceNeeded" class="metric-value">£-- (--% rise)</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Sale Needed:</span>
+                        <span id="saleNeeded" class="metric-value">£--</span>
+                    </div>
+                </div>
+                
+                <!-- Selling Impact Card -->
+                <div class="card">
+                    <h3>💸 Selling Impact</h3>
+                    <div class="metric">
+                        <span class="metric-label">Estimated Fees:</span>
+                        <span id="sellingFees" class="metric-value">£-- (---%)</span>
+                    </div>
+                    <div class="large-metric">
+                        <div id="sellingResult" class="value">£--</div>
+                        <div class="label">Net Result if Sold Now</div>
+                    </div>
+                </div>
+                
+                <!-- Trading Decisions Card -->
+                <div class="card">
+                    <h3>🤖 Trading Decisions</h3>
+                    <div class="metric">
+                        <span class="metric-label">Should Buy:</span>
+                        <span id="shouldBuy" class="metric-value">--</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Should Sell:</span>
+                        <span id="shouldSell" class="metric-value">--</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Next Evaluation:</span>
+                        <span id="nextEvaluation" class="metric-value">--</span>
+                    </div>
+                </div>
+                
+                <!-- Configuration Card -->
+                <div class="card">
+                    <h3>⚙️ Configuration</h3>
+                    <div class="metric">
+                        <span class="metric-label">Buy Below:</span>
+                        <span id="buyThreshold" class="metric-value">£--</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Sell Above:</span>
+                        <span id="sellThreshold" class="metric-value">£--</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Profit Target:</span>
+                        <span id="profitTarget" class="metric-value">£--</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Max Buy:</span>
+                        <span id="maxBuy" class="metric-value">£--</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Max Sell:</span>
+                        <span id="maxSell" class="metric-value">-- BTC</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="last-updated">
+                Last updated: <span id="lastUpdated">--</span>
+            </div>
+        </div>
+    </div>
+    
+    <button class="refresh-btn" onclick="loadTradingData()" title="Refresh Data">
+        🔄
+    </button>
+    
+    <script>
+        let autoRefreshInterval;
+        
+        async function loadTradingData() {
+            try {
+                document.getElementById('loadingMessage').style.display = 'block';
+                document.getElementById('errorMessage').style.display = 'none';
+                
+                const response = await fetch('/api/trading-analysis');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch trading data');
+                }
+                
+                const data = await response.json();
+                updateDashboard(data);
+                
+                document.getElementById('loadingMessage').style.display = 'none';
+                document.getElementById('dashboardContent').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error loading trading data:', error);
+                document.getElementById('loadingMessage').style.display = 'none';
+                document.getElementById('errorMessage').style.display = 'block';
+                document.getElementById('dashboardContent').style.display = 'none';
+            }
+        }
+        
+        function updateDashboard(data) {
+            // Current Price
+            document.getElementById('currentPrice').textContent = `£${data.currentPrice?.toLocaleString() || '--'}`;
+            
+            // Trading Status
+            const statusElement = document.getElementById('tradingStatus');
+            const statusText = document.getElementById('statusText');
+            const tradingStatusText = document.getElementById('tradingStatusText');
+            
+            if (data.tradingStatus === 'Active Trading') {
+                statusElement.className = 'status-indicator status-active';
+                statusText.textContent = '✅ System Active';
+                tradingStatusText.textContent = '✅ Active Trading';
+                tradingStatusText.className = 'metric-value positive';
+            } else {
+                statusElement.className = 'status-indicator status-inactive';
+                statusText.textContent = '⏸️ System Inactive';
+                tradingStatusText.textContent = data.tradingStatus || 'Unknown';
+                tradingStatusText.className = 'metric-value neutral';
+            }
+            
+            // Holdings
+            document.getElementById('btcAmount').textContent = `${data.btcAmount || 0} BTC`;
+            document.getElementById('btcValue').textContent = `£${data.btcValue?.toLocaleString() || '--'}`;
+            
+            const appreciation = data.appreciation || 0;
+            const appreciationElement = document.getElementById('appreciation');
+            appreciationElement.textContent = `£${appreciation >= 0 ? '+' : ''}${appreciation.toFixed(2)}`;
+            appreciationElement.className = `metric-value ${appreciation >= 0 ? 'positive' : 'negative'}`;
+            
+            document.getElementById('gbpCash').textContent = `£${data.gbpCash?.toLocaleString() || '--'}`;
+            
+            const valueChange = data.valueChange || 0;
+            const valueChangeElement = document.getElementById('valueChange');
+            valueChangeElement.textContent = `£${valueChange >= 0 ? '+' : ''}${valueChange.toFixed(2)}`;
+            valueChangeElement.className = `metric-value ${valueChange >= 0 ? 'positive' : 'negative'}`;
+            
+            // Profit Analysis
+            const currentProfit = data.currentProfit || 0;
+            const currentProfitElement = document.getElementById('currentProfit');
+            currentProfitElement.textContent = `£${currentProfit >= 0 ? '+' : ''}${currentProfit.toFixed(2)}`;
+            currentProfitElement.className = `value ${currentProfit >= 0 ? 'positive' : 'negative'}`;
+            
+            document.getElementById('neededProfit').textContent = 
+                `£${data.neededProfit?.toFixed(2) || '--'} (${data.neededProfitPercent?.toFixed(1) || '--'}%)`;
+            
+            document.getElementById('priceNeeded').textContent = 
+                `£${data.priceNeeded?.toLocaleString() || '--'} (${data.priceNeededPercent?.toFixed(1) || '--'}% rise)`;
+            
+            document.getElementById('saleNeeded').textContent = `£${data.saleNeeded?.toFixed(2) || '--'}`;
+            
+            // Selling Impact
+            document.getElementById('sellingFees').textContent = 
+                `£${data.sellingFees?.toFixed(2) || '--'} (${data.sellingFeesPercent?.toFixed(2) || '--'}%)`;
+            
+            const sellingResult = data.sellingResult || 0;
+            const sellingResultElement = document.getElementById('sellingResult');
+            sellingResultElement.textContent = `£${sellingResult >= 0 ? '+' : ''}${sellingResult.toFixed(2)}`;
+            sellingResultElement.className = `value ${sellingResult >= 0 ? 'positive' : 'negative'}`;
+            
+            // Trading Decisions
+            const shouldBuyElement = document.getElementById('shouldBuy');
+            shouldBuyElement.textContent = data.shouldBuy ? '✅ Yes' : '❌ No';
+            shouldBuyElement.className = `metric-value ${data.shouldBuy ? 'positive' : 'negative'}`;
+            
+            const shouldSellElement = document.getElementById('shouldSell');
+            shouldSellElement.textContent = data.shouldSell ? '✅ Yes' : '❌ No';
+            shouldSellElement.className = `metric-value ${data.shouldSell ? 'positive' : 'negative'}`;
+            
+            document.getElementById('nextEvaluation').textContent = data.nextEvaluation || '--';
+            
+            // Configuration
+            document.getElementById('buyThreshold').textContent = `£${data.config?.buyThreshold?.toLocaleString() || '--'}`;
+            document.getElementById('sellThreshold').textContent = `£${data.config?.sellThreshold?.toLocaleString() || '--'}`;
+            document.getElementById('profitTarget').textContent = `£${data.config?.profitTarget || '--'}`;
+            document.getElementById('maxBuy').textContent = `£${data.config?.maxBuy || '--'}`;
+            document.getElementById('maxSell').textContent = `${data.config?.maxSell || '--'} BTC`;
+            
+            // Last Updated
+            document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
+        }
+        
+        // Auto-refresh every 30 seconds
+        function startAutoRefresh() {
+            autoRefreshInterval = setInterval(loadTradingData, 30000);
+        }
+        
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+        }
+        
+        // Handle page visibility change
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                stopAutoRefresh();
+            } else {
+                loadTradingData();
+                startAutoRefresh();
+            }
+        });
+        
+        // Initial load
+        loadTradingData();
+        startAutoRefresh();
+    </script>
+</body>
+</html>

@@ -896,6 +896,18 @@ class UnifiedTradingSystem {
         alertSection + '\n\n' +
         '✅ System is monitoring and ready to trade!';
 
+      // Get local network IP for dashboard link
+      let dashboardUrl = 'http://localhost:3001';
+      try {
+        const { execSync } = require('child_process');
+        const networkIp = execSync('ipconfig getifaddr en0', { encoding: 'utf8' }).trim();
+        if (networkIp && networkIp !== '127.0.0.1') {
+          dashboardUrl = `http://${networkIp}:3001`;
+        }
+      } catch (error) {
+        console.log('⚠️ Could not get network IP, using localhost for dashboard link');
+      }
+
       // Create a minimal startup message that we know works
       const fullStartupMessage = 
         `Auto-Trading System Started!\n\n` +
@@ -909,7 +921,9 @@ class UnifiedTradingSystem {
         `- Drop: ${dropThresholds.join(', ')}\n` +
         `- Rise: ${riseThresholds.join(', ')}\n` +
         `- Drop %: ${percentDrop}% | Rise %: ${percentRise}%\n\n` +
-        `System is monitoring and ready to trade!`;
+        `System is monitoring and ready to trade!\n\n` +
+        `📊 Live Dashboard: ${dashboardUrl}\n` +
+        `💡 Run: npm run dashboard (if not already running)`;
 
       // Send startup alert asynchronously
       if (fullStartupMessage && typeof fullStartupMessage === 'string' && fullStartupMessage.trim().length > 0) {

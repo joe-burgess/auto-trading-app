@@ -49,6 +49,7 @@
     "manage-profit": "node manage-profit-target.js",
     "show-profit": "node manage-profit-target.js show",
     "set-profit": "node manage-profit-target.js set",
+    "dashboard": "node web-dashboard.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
