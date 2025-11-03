@@ -141,6 +141,37 @@ class BalanceResetter {
   }
 
   /**
+   * Reset payment tracking and record initial payment
+   */
+  resetPaymentTracking(btcPrice, btcAmount) {
+    try {
+      // Clear existing payment history
+      const paymentHistoryPath = path.join(this.dataDir, 'payment-history.json');
+      
+      // Create initial payment record for the reset BTC balance
+      const initialPayment = {
+        id: `pay_reset_${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        date: new Date().toLocaleDateString('en-GB'),
+        gbpAmount: this.targetBtcValue,
+        btcAmount: btcAmount,
+        btcPrice: btcPrice,
+        type: 'initial-balance',
+        status: 'active',
+        note: `Initial balance from reset: £${this.targetBtcValue} worth of BTC`
+      };
+
+      // Write initial payment to file
+      fs.writeFileSync(paymentHistoryPath, JSON.stringify([initialPayment], null, 2));
+      console.log('✅ Payment tracking reset with initial balance payment');
+      console.log(`   💰 Initial payment: £${this.targetBtcValue} for ${btcAmount.toFixed(8)} BTC`);
+      
+    } catch (error) {
+      console.log('⚠️ Error resetting payment tracking:', error.message);
+    }
+  }
+
+  /**
    * Main reset function
    */
   async performReset(options = {}) {
@@ -169,11 +200,15 @@ class BalanceResetter {
         this.clearTradingLogs();
       }
       
+      // Reset payment tracking and record initial payment
+      this.resetPaymentTracking(btcPrice, btcAmount);
+      
       console.log('\n🎉 Balance reset completed successfully!');
       console.log('📊 New Configuration:');
       console.log(`   💷 GBP Balance: £${this.targetGbp}.00`);
       console.log(`   🪙 BTC Balance: ${btcAmount.toFixed(8)} BTC (£${this.targetBtcValue} worth)`);
       console.log(`   🏦 Total Value: £${this.targetGbp + this.targetBtcValue}.00`);
+      console.log(`   📦 Payment Tracking: 1 initial payment recorded`);
       
     } catch (error) {
       console.error('❌ Reset failed:', error.message);

@@ -14,7 +14,7 @@ class BTCBuyingSystem {
       
       // Trading environment
       sandbox: config.sandbox !== false,
-      baseUrl: config.sandbox !== false ? 'api-public.sandbox.exchange.coinbase.com' : 'api.exchange.coinbase.com',
+      baseUrl: config.sandbox === true ? 'api-public.sandbox.exchange.coinbase.com' : 'api.exchange.coinbase.com',
       dryRun: config.dryRun !== false,
       
       // Buying triggers and limits
@@ -232,7 +232,7 @@ class BTCBuyingSystem {
         const buyingLogPath = path.join(__dirname, 'data', 'buying-log.json');
         
         let gbpBalance = 0;
-        let btcBalance = 0.00243902; // Current BTC amount after reset (£200 worth)
+        let btcBalance = 0.00245955; // Current BTC amount after reset (£200 worth)
         
         // Get GBP balance from latest balance history (includes simulated funds)
         if (fs.existsSync(balanceHistoryPath)) {
@@ -287,7 +287,7 @@ class BTCBuyingSystem {
       // Fallback to original hardcoded values
       return {
         GBP: { balance: 0, available: 0, hold: 0 },
-        BTC: { balance: 0.00243902, available: 0.00243902, hold: 0 }
+        BTC: { balance: 0.00245955, available: 0.00245955, hold: 0 }
       };
     }
 

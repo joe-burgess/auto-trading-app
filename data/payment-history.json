@@ -1,0 +1,53 @@
+[
+  {
+    "id": "pay_reset_1762203666179",
+    "timestamp": "2025-11-03T21:01:06.179Z",
+    "date": "03/11/2025",
+    "gbpAmount": 200,
+    "btcAmount": 0.0024595484219906254,
+    "btcPrice": 81315.74,
+    "type": "initial-balance",
+    "status": "active",
+    "note": "Initial balance from reset: £200 worth of BTC"
+  },
+  {
+    "id": "pay_1762203669399_2qeu1405d",
+    "timestamp": "2025-11-03T21:01:09.399Z",
+    "date": "03/11/2025",
+    "gbpAmount": 60,
+    "btcAmount": 0.000739964235061972,
+    "btcPrice": 81085,
+    "type": "simulated-buy",
+    "status": "active"
+  },
+  {
+    "id": "pay_1762203675418_yw15zofl6",
+    "timestamp": "2025-11-03T21:01:15.418Z",
+    "date": "03/11/2025",
+    "gbpAmount": 250,
+    "btcAmount": 0.0030831843127582166,
+    "btcPrice": 81085,
+    "type": "simulated-buy",
+    "status": "active"
+  },
+  {
+    "id": "pay_1762203680912_5oz1rysgm",
+    "timestamp": "2025-11-03T21:01:20.912Z",
+    "date": "03/11/2025",
+    "gbpAmount": 300,
+    "btcAmount": 0.0036998211753098602,
+    "btcPrice": 81085,
+    "type": "simulated-buy",
+    "status": "active"
+  },
+  {
+    "id": "pay_1762203744595_h8k4ty9y6",
+    "timestamp": "2025-11-03T21:02:24.595Z",
+    "date": "03/11/2025",
+    "gbpAmount": 400,
+    "btcAmount": 0.004927564797477087,
+    "btcPrice": 81176,
+    "type": "simulated-buy",
+    "status": "active"
+  }
+]

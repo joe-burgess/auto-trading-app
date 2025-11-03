@@ -53,7 +53,7 @@
         
         .dashboard-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
@@ -91,6 +91,7 @@
         .metric-value {
             font-weight: bold;
             font-size: 1.1rem;
+            text-align: right;
         }
         
         .positive {
@@ -172,6 +173,11 @@
         @media (max-width: 768px) {
             .dashboard-grid {
                 grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .card {
+                padding: 20px;
             }
             
             .header h1 {
@@ -181,6 +187,267 @@
             .large-metric .value {
                 font-size: 2rem;
             }
+            
+            .payment-item {
+                padding: 15px;
+            }
+            
+            .payments-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            
+            .payment-metrics {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            
+            .metric-value {
+                font-size: 0.95rem;
+                overflow-wrap: break-word;
+            }
+        }
+        
+        /* Payment Tracking Styles */
+        .payments-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .payment-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .payment-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+        }
+        
+        .payment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .payment-id {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+        
+        .payment-date {
+            font-size: 0.8rem;
+            opacity: 0.6;
+        }
+        
+        .payment-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .payment-metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 0;
+        }
+        
+        .payment-profit {
+            grid-column: span 2;
+            text-align: center;
+            margin-top: 8px;
+            padding: 8px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .payment-profit.profit {
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+        }
+        
+        .payment-profit.loss {
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+        }
+        
+        .no-payments {
+            text-align: center;
+            opacity: 0.7;
+            margin: 20px 0;
+        }
+
+        /* Status Badge Styles */
+        .payment-status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 8px;
+        }
+
+        .status-ready-to-sell {
+            background-color: #28a745;
+            color: white;
+            animation: pulse-green 2s infinite;
+        }
+
+        .status-profitable {
+            background-color: #ffc107;
+            color: #212529;
+        }
+
+        .status-break-even {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .status-loss {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+        }
+
+        .payment-item.ready-to-sell {
+            border: 2px solid #28a745;
+            background: rgba(40, 167, 69, 0.1);
+        }
+
+        .payment-item.profitable {
+            border: 1px solid #ffc107;
+            background: rgba(255, 193, 7, 0.05);
+        }
+
+        .sell-btn.ready {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            animation: glow-green 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow-green {
+            from { box-shadow: 0 0 5px #28a745; }
+            to { box-shadow: 0 0 20px #28a745, 0 0 30px #28a745; }
+        }
+        
+        /* Sell Button Styles */
+        .payment-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 8px;
+        }
+        
+        .sell-btn {
+            flex: 1;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .sell-btn:hover {
+            background: #c82333;
+            transform: translateY(-1px);
+        }
+        
+        .sell-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            margin: 15% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            color: white;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .modal h3 {
+            margin-top: 0;
+            color: #ffd700;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-btn.confirm {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .modal-btn.confirm:hover {
+            background: #c82333;
+        }
+        
+        .modal-btn.cancel {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .modal-btn.cancel:hover {
+            background: #5a6268;
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: white;
         }
     </style>
 </head>
@@ -209,6 +476,8 @@
                     <div class="large-metric">
                         <div id="currentPrice" class="value">£--,---</div>
                         <div class="label">BTC Price</div>
+                        <div id="currentAsk" style="margin-top: 8px; font-size: 1.1rem; color: #ffd700;"></div>
+                        <div id="currentAskBtc" style="margin-top: 2px; font-size: 1rem; color: #ffd700;"></div>
                     </div>
                     <div class="metric">
                         <span class="metric-label">Trading Status:</span>
@@ -316,6 +585,39 @@
                         <span id="maxSell" class="metric-value">-- BTC</span>
                     </div>
                 </div>
+                
+                <!-- Payment Summary Card -->
+                <div class="card">
+                    <h3>💳 Payment Tracking Summary</h3>
+                    <div class="metric">
+                        <span class="metric-label">Total Payments:</span>
+                        <span id="totalPayments" class="metric-value">--</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Total Invested:</span>
+                        <span id="totalInvested" class="metric-value">£--</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Average Buy Price:</span>
+                        <span id="averageBuyPrice" class="metric-value">£--</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Profitable Payments:</span>
+                        <span id="profitablePayments" class="metric-value">-- / --</span>
+                    </div>
+                    <div class="large-metric">
+                        <div id="totalPaymentProfit" class="value">£--</div>
+                        <div class="label">Total Payment Profit</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Individual Payments Section -->
+            <div id="paymentsSection" class="card" style="margin-top: 20px;">
+                <h3>📊 Individual Payment Performance</h3>
+                <div id="paymentsContainer">
+                    <div class="loading">Loading payment data...</div>
+                </div>
             </div>
             
             <div class="last-updated">
@@ -327,6 +629,21 @@
     <button class="refresh-btn" onclick="loadTradingData()" title="Refresh Data">
         🔄
     </button>
+    
+    <!-- Sell Payment Confirmation Modal -->
+    <div id="sellModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeSellModal()">&times;</span>
+            <h3>🚨 Confirm Payment Sale</h3>
+            <div id="sellModalContent">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" onclick="closeSellModal()">Cancel</button>
+                <button class="modal-btn confirm" onclick="confirmSellPayment()">Sell Payment</button>
+            </div>
+        </div>
+    </div>
     
     <script>
         let autoRefreshInterval;
@@ -358,6 +675,15 @@
         function updateDashboard(data) {
             // Current Price
             document.getElementById('currentPrice').textContent = `£${data.currentPrice?.toLocaleString() || '--'}`;
+            // BTC Ask Price
+            if (data.currentAsk && !isNaN(data.currentAsk)) {
+                document.getElementById('currentAsk').textContent = `Ask: £${data.currentAsk.toLocaleString()}`;
+                const btcValue = 1 / data.currentAsk;
+                document.getElementById('currentAskBtc').textContent = `= ${btcValue.toFixed(8)} BTC per £1`;
+            } else {
+                document.getElementById('currentAsk').textContent = '';
+                document.getElementById('currentAskBtc').textContent = '';
+            }
             
             // Trading Status
             const statusElement = document.getElementById('tradingStatus');
@@ -433,8 +759,195 @@
             document.getElementById('maxBuy').textContent = `£${data.config?.maxBuy || '--'}`;
             document.getElementById('maxSell').textContent = `${data.config?.maxSell || '--'} BTC`;
             
+            // Payment Tracking Summary
+            updatePaymentSummary(data.paymentTracking?.summary);
+            updateIndividualPayments(data.paymentTracking?.individualPayments);
+            
             // Last Updated
             document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
+        }
+        
+        function updatePaymentSummary(summary) {
+            if (!summary) {
+                document.getElementById('totalPayments').textContent = '--';
+                document.getElementById('totalInvested').textContent = '£--';
+                document.getElementById('averageBuyPrice').textContent = '£--';
+                document.getElementById('profitablePayments').textContent = '-- / --';
+                document.getElementById('totalPaymentProfit').textContent = '£--';
+                return;
+            }
+            
+            document.getElementById('totalPayments').textContent = summary.totalPayments || 0;
+            document.getElementById('totalInvested').textContent = `£${summary.totalGbpInvested?.toFixed(2) || '--'}`;
+            document.getElementById('averageBuyPrice').textContent = `£${summary.averageBuyPrice?.toLocaleString() || '--'}`;
+            document.getElementById('profitablePayments').textContent = 
+                `${summary.profitablePayments || 0} / ${summary.totalPayments || 0}`;
+            
+            const totalPaymentProfit = summary.totalProfit || 0;
+            const totalPaymentProfitElement = document.getElementById('totalPaymentProfit');
+            totalPaymentProfitElement.textContent = `£${totalPaymentProfit >= 0 ? '+' : ''}${totalPaymentProfit.toFixed(2)}`;
+            totalPaymentProfitElement.className = `value ${totalPaymentProfit >= 0 ? 'positive' : 'negative'}`;
+        }
+        
+        function updateIndividualPayments(payments) {
+            const container = document.getElementById('paymentsContainer');
+            
+            if (!payments || payments.length === 0) {
+                container.innerHTML = '<div class="no-payments">No active payments to display</div>';
+                return;
+            }
+            
+            // Sort payments by date (newest first)
+            const sortedPayments = [...payments].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            const paymentsHtml = sortedPayments.map(payment => {
+                const profitClass = payment.isProfit ? 'profit' : 'loss';
+                const profitPrefix = payment.profit >= 0 ? '+' : '';
+                const analysis = payment.profitAnalysis || {};
+                
+                // Status indicators
+                const statusClass = payment.status || 'break-even';
+                const statusColor = payment.statusColor || '#6c757d';
+                const statusText = payment.statusText || '📊 Break Even';
+                const badge = payment.badge || 'EVEN';
+                const readyToSell = payment.readyToSell || false;
+                
+                return `
+                    <div class="payment-item ${statusClass}">
+                        <div class="payment-header">
+                            <span class="payment-id">#${payment.id.slice(-8)}
+                                <span class="payment-status-badge status-${statusClass}" style="background-color: ${statusColor};">
+                                    ${badge}
+                                </span>
+                            </span>
+                            <span class="payment-date">${payment.date} (${payment.daysHeld}d)</span>
+                        </div>
+                        <div class="payment-status-indicator" style="color: ${statusColor}; font-weight: bold; margin-bottom: 10px;">
+                            ${statusText}
+                        </div>
+                        <div class="payment-metrics">
+                            <div class="payment-metric">
+                                <span>Invested:</span>
+                                <span>£${payment.gbpAmount.toFixed(2)}</span>
+                            </div>
+                            <div class="payment-metric">
+                                <span>BTC Amount:</span>
+                                <span>${payment.btcAmount.toFixed(8)}</span>
+                            </div>
+                            <div class="payment-metric">
+                                <span>Buy Price:</span>
+                                <span>£${payment.btcPrice.toLocaleString()}</span>
+                            </div>
+                            <div class="payment-metric">
+                                <span>Current Value:</span>
+                                <span>£${payment.currentValue.toFixed(2)}</span>
+                            </div>
+                            <div class="payment-profit ${profitClass}">
+                                Current Profit: ${profitPrefix}£${payment.profit.toFixed(2)} (${profitPrefix}${payment.profitPercent.toFixed(1)}%)
+                            </div>
+                            ${analysis.neededProfit > 0 ? `
+                            <div class="payment-metric">
+                                <span>Needed for £${analysis.profitTarget} target:</span>
+                                <span>£${analysis.neededProfit.toFixed(2)}</span>
+                            </div>
+                            <div class="payment-metric">
+                                <span>BTC price needed:</span>
+                                <span>£${analysis.priceNeeded.toLocaleString()} (${analysis.priceNeededPercent >= 0 ? '+' : ''}${analysis.priceNeededPercent.toFixed(1)}%)</span>
+                            </div>
+                            ` : ''}
+                            <div class="payment-metric">
+                                <span>Sale needed (with fees):</span>
+                                <span>£${analysis.saleNeeded.toFixed(2)}</span>
+                            </div>
+                            <div class="payment-metric">
+                                <span>Estimated selling fees:</span>
+                                <span>£${analysis.sellingFees.toFixed(2)} (${analysis.sellingFeesPercent}%)</span>
+                            </div>
+                            <div class="payment-metric">
+                                <span>Net profit after fees:</span>
+                                <span class="${analysis.netProfit >= 0 ? 'positive' : 'negative'}">
+                                    ${analysis.netProfit >= 0 ? '+' : ''}£${analysis.netProfit.toFixed(2)}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="payment-actions">
+                            <button class="sell-btn ${readyToSell ? 'ready' : ''}" onclick="openSellModal('${payment.id}', ${payment.btcAmount}, ${payment.currentValue}, ${payment.profit})">
+                                ${readyToSell ? '🎯 SELL NOW (Profitable!)' : '💰 Sell This Payment'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = `<div class="payments-grid">${paymentsHtml}</div>`;
+        }
+        
+        // Modal functionality
+        let currentSellPayment = null;
+        
+        function openSellModal(paymentId, btcAmount, currentValue, profit) {
+            currentSellPayment = { paymentId, btcAmount, currentValue, profit };
+            
+            const fees = currentValue * 0.0083; // 0.83% Coinbase fee
+            const netProceeds = currentValue - fees;
+            const profitAfterFees = profit - fees;
+            
+            document.getElementById('sellModalContent').innerHTML = `
+                <p><strong>Payment ID:</strong> #${paymentId.slice(-8)}</p>
+                <p><strong>BTC Amount:</strong> ${btcAmount.toFixed(8)} BTC</p>
+                <p><strong>Current Value:</strong> £${currentValue.toFixed(2)}</p>
+                <p><strong>Estimated Fees:</strong> £${fees.toFixed(2)} (0.83%)</p>
+                <p><strong>Net Proceeds:</strong> £${netProceeds.toFixed(2)}</p>
+                <p><strong>Profit After Fees:</strong> <span class="${profitAfterFees >= 0 ? 'positive' : 'negative'}">
+                    £${profitAfterFees >= 0 ? '+' : ''}${profitAfterFees.toFixed(2)}
+                </span></p>
+                <br>
+                <p><strong>⚠️ This will sell only this specific payment and remove it from tracking.</strong></p>
+            `;
+            
+            document.getElementById('sellModal').style.display = 'block';
+        }
+        
+        function closeSellModal() {
+            document.getElementById('sellModal').style.display = 'none';
+            currentSellPayment = null;
+        }
+        
+        async function confirmSellPayment() {
+            if (!currentSellPayment) return;
+            
+            try {
+                const response = await fetch('/api/sell-payment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        paymentId: currentSellPayment.paymentId,
+                        btcAmount: currentSellPayment.btcAmount
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`✅ Payment sold successfully! Net proceeds: £${result.netProceeds.toFixed(2)}`);
+                    closeSellModal();
+                    loadTradingData(); // Refresh the dashboard
+                } else {
+                    alert(`❌ Failed to sell payment: ${result.message}`);
+                }
+            } catch (error) {
+                alert(`❌ Error selling payment: ${error.message}`);
+            }
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('sellModal');
+            if (event.target === modal) {
+                closeSellModal();
+            }
         }
         
         // Auto-refresh every 30 seconds

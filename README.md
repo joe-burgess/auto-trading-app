@@ -50,6 +50,13 @@ A comprehensive Bitcoin automated trading system with buy-low-sell-high strategy
 
 ## Trading System Quick Start
 
+### 🚀 **Complete System (Recommended)**
+```bash
+npm run start-trading         # Start BOTH auto-trader + web dashboard
+# Opens: Auto-trader in terminal + Web UI at http://localhost:3001
+# Press Ctrl+C to stop both systems
+```
+
 ### 1. Fee Calculation (No API needed)
 ```bash
 npm run trade-calculate        # Calculate fees for 0.01 BTC
@@ -152,9 +159,12 @@ npm run test-telegram-alerts
 
 ### 2. Start Auto-Trading 🤖
 ```bash
-npm run auto-trade
+npm run start-trading               # 🚀 RECOMMENDED: Both systems (dashboard output silenced)
+npm run start-trading-verbose       # 🚀 Both systems with full dashboard output
+npm run auto-trade                 # Auto-trader only (terminal)  
+npm run dashboard                  # Web dashboard only (http://localhost:3001)
 ```
-Includes automated buy/sell, profit tracking, and Telegram alerts!
+Includes automated buy/sell, profit tracking, Telegram alerts, and web interface!
 
 ### 3. Manual Trading Tools 🛠️
 ```bash
@@ -275,7 +285,7 @@ npm run test-telegram          # Basic Telegram connection test
 npm run emergency-buy-check     # Manual buy opportunity checker
 npm run manual-sell-check       # Manual sell opportunity checker
 npm run show-balance           # Display current balance
-npm run reset-balance          # Reset balance to £50 GBP + £200 BTC
+npm run reset-balance          # Reset balance to £50 GBP + £200 BTC + record initial payment
 npm run reset-balance-confirm   # Reset without confirmation
 ```
 

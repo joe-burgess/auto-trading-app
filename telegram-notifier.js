@@ -7,6 +7,26 @@ class TelegramNotifier {
     this.botToken = botToken;
     this.chatId = chatId;
     this.baseUrl = `https://api.telegram.org/bot${botToken}`;
+    
+    // Validate bot token format
+    if (!botToken || !this.isValidBotToken(botToken)) {
+      console.warn('⚠️ Invalid Telegram bot token format');
+    }
+    
+    // Validate chat ID format
+    if (!chatId || !this.isValidChatId(chatId)) {
+      console.warn('⚠️ Invalid Telegram chat ID format');
+    }
+  }
+  
+  isValidBotToken(token) {
+    // Telegram bot token format: numbers:letters/numbers/characters
+    return /^\d+:[A-Za-z0-9_-]+$/.test(token);
+  }
+  
+  isValidChatId(chatId) {
+    // Chat ID should be a number (can be negative)
+    return /^-?\d+$/.test(chatId.toString());
   }
 
   async sendMessage(text, options = {}) {
@@ -45,13 +65,26 @@ class TelegramNotifier {
         res.on('data', (chunk) => responseData += chunk);
         res.on('end', () => {
           try {
+            // Log the raw response for debugging
+            if (!responseData.startsWith('{')) {
+              console.error('❌ Telegram API returned non-JSON response:');
+              console.error('Status Code:', res.statusCode);
+              console.error('Headers:', res.headers);
+              console.error('Response:', responseData.substring(0, 500) + (responseData.length > 500 ? '...' : ''));
+              reject(new Error(`Telegram API returned HTML instead of JSON. Status: ${res.statusCode}`));
+              return;
+            }
+            
             const result = JSON.parse(responseData);
             if (result.ok) {
               resolve(result);
             } else {
-              reject(new Error(`Telegram API error: ${result.description}`));
+              console.error('❌ Telegram API error response:', result);
+              reject(new Error(`Telegram API error: ${result.description || 'Unknown error'}`));
             }
           } catch (error) {
+            console.error('❌ Failed to parse Telegram response:', error.message);
+            console.error('Raw response:', responseData.substring(0, 500) + (responseData.length > 500 ? '...' : ''));
             reject(error);
           }
         });
@@ -63,11 +96,38 @@ class TelegramNotifier {
     });
   }
 
-  async sendPriceAlert(price, threshold, type = 'drop') {
-    const emoji = type === 'drop' ? '📉' : '📈';
-    const direction = type === 'drop' ? 'below' : 'above';
+  async sendPriceAlert(alertData) {
+    // Handle both old format (price, threshold, type) and new format (alertData object)
+    let price, threshold, type, message;
     
-    const message = `
+    if (typeof alertData === 'object' && alertData !== null) {
+      price = alertData.price;
+      threshold = alertData.threshold;
+      type = alertData.type || 'drop';
+      message = alertData.message;
+    } else {
+      // Fallback to old format for backward compatibility
+      price = arguments[0];
+      threshold = arguments[1];
+      type = arguments[2] || 'drop';
+    }
+    
+    // Validate inputs
+    if (typeof price !== 'number' || isNaN(price)) {
+      console.error('❌ Invalid price for Telegram alert:', price);
+      return;
+    }
+    
+    if (typeof threshold !== 'number' || isNaN(threshold)) {
+      console.error('❌ Invalid threshold for Telegram alert:', threshold);
+      return;
+    }
+    
+    const emoji = type.includes('drop') ? '📉' : '📈';
+    const direction = type.includes('drop') ? 'below' : 'above';
+    
+    // Use custom message if provided, otherwise create default
+    const alertMessage = message || `
 🚨 <b>BTC PRICE ALERT</b> 🚨
 
 ${emoji} <b>Price ${direction} threshold!</b>
@@ -75,15 +135,21 @@ ${emoji} <b>Price ${direction} threshold!</b>
 🎯 Alert Threshold: £${threshold.toLocaleString()}
 ⏰ Time: ${new Date().toLocaleString('en-GB')}
 
-${type === 'drop' ? '💡 This might be a buying opportunity!' : '💡 Consider taking profits!'}
+${type.includes('drop') ? '💡 This might be a buying opportunity!' : '💡 Consider taking profits!'}
     `.trim();
 
-    return this.sendMessage(message);
+    return this.sendMessage(alertMessage);
   }
 
   async sendBuyConfirmation(amount, price, autoApproval = false) {
     if (autoApproval) {
       return this.sendBuyNotification(amount, price, 'executed');
+    }
+    
+    // Validate inputs
+    if (typeof price !== 'number' || isNaN(price)) {
+      console.error('❌ Invalid price for buy confirmation:', price);
+      return;
     }
     
     const message = `
@@ -101,6 +167,12 @@ Reply with /buy_yes or /buy_no
   }
 
   async sendBuyNotification(amount, price, status = 'executed') {
+    // Validate inputs
+    if (typeof price !== 'number' || isNaN(price)) {
+      console.error('❌ Invalid price for buy notification:', price);
+      return;
+    }
+    
     const emoji = status === 'executed' ? '✅' : '⏳';
     const statusText = status === 'executed' ? 'EXECUTED' : 'PENDING';
     
@@ -122,6 +194,12 @@ ${emoji} <b>BUY ORDER ${statusText}</b> ${emoji}
       return this.sendSellNotification(amount, price, profit, 'executed');
     }
     
+    // Validate inputs
+    if (typeof price !== 'number' || isNaN(price)) {
+      console.error('❌ Invalid price for sell confirmation:', price);
+      return;
+    }
+    
     const message = `
 🚨 <b>SELL OPPORTUNITY DETECTED</b> 🚨
 
@@ -138,6 +216,12 @@ Reply with /sell_yes or /sell_no
   }
 
   async sendSellNotification(amount, price, profit, status = 'executed') {
+    // Validate inputs
+    if (typeof price !== 'number' || isNaN(price)) {
+      console.error('❌ Invalid price for sell notification:', price);
+      return;
+    }
+    
     const emoji = status === 'executed' ? '✅' : '⏳';
     const statusText = status === 'executed' ? 'EXECUTED' : 'PENDING';
     
@@ -157,6 +241,11 @@ ${emoji} <b>SELL ORDER ${statusText}</b> ${emoji}
 
   async testConnection() {
     try {
+      // First try to get bot info to validate token
+      const botInfo = await this.getBotInfo();
+      console.log(`✅ Bot info: ${botInfo.result.first_name} (@${botInfo.result.username})`);
+      
+      // Then try to send a test message
       const result = await this.sendMessage('🤖 Telegram bot connected successfully!\n\n✅ Ready to send trading alerts');
       console.log('✅ Telegram connection test successful');
       return true;
@@ -164,6 +253,46 @@ ${emoji} <b>SELL ORDER ${statusText}</b> ${emoji}
       console.error('❌ Telegram connection test failed:', error.message);
       return false;
     }
+  }
+  
+  async getBotInfo() {
+    return new Promise((resolve, reject) => {
+      const requestOptions = {
+        hostname: 'api.telegram.org',
+        port: 443,
+        path: `/bot${this.botToken}/getMe`,
+        method: 'GET',
+      };
+
+      const req = https.request(requestOptions, (res) => {
+        let responseData = '';
+        res.on('data', (chunk) => responseData += chunk);
+        res.on('end', () => {
+          try {
+            if (!responseData.startsWith('{')) {
+              console.error('❌ Telegram getMe API returned non-JSON response:');
+              console.error('Status Code:', res.statusCode);
+              console.error('Response:', responseData.substring(0, 300) + '...');
+              reject(new Error(`Telegram API returned HTML instead of JSON. Status: ${res.statusCode}`));
+              return;
+            }
+            
+            const result = JSON.parse(responseData);
+            if (result.ok) {
+              resolve(result);
+            } else {
+              reject(new Error(`Telegram API error: ${result.description || 'Unknown error'}`));
+            }
+          } catch (error) {
+            console.error('❌ Failed to parse Telegram getMe response:', error.message);
+            reject(error);
+          }
+        });
+      });
+
+      req.on('error', reject);
+      req.end();
+    });
   }
 }
 

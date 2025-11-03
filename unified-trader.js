@@ -4,6 +4,7 @@ const CoinbaseTrader = require('./btc-trader');
 const ProfitTracker = require('./profit-tracker');
 const TimingController = require('./timing-controller');
 const TelegramNotifier = require('./telegram-notifier');
+const PaymentTracker = require('./payment-tracker');
 
 class UnifiedTradingSystem {
   constructor(config = {}) {
@@ -103,6 +104,9 @@ class UnifiedTradingSystem {
       profitThreshold: this.config.selling.profitTarget,
     });
     
+    // Initialize payment tracker for individual purchase tracking
+    this.paymentTracker = new PaymentTracker();
+    
     // Initialize timing controller for human-like behavior
     this.timingController = new TimingController(this.config.timing || {});
     
@@ -146,6 +150,9 @@ class UnifiedTradingSystem {
     this.buyPrice = 0; // Track average buy price
     this.previousPrice = 0; // Track previous price for change calculation
     
+    // Balance tracking for payment cleanup detection
+    this.lastKnownBtcBalance = 0;
+    
     // Price alert tracking
     this.alertHistory = {
       lastDropAlert: 0,
@@ -154,6 +161,9 @@ class UnifiedTradingSystem {
       dailyRises: 0,
       lastAlertReset: new Date().toDateString()
     };
+    
+    // Payment-level profit alert tracking
+    this.paymentAlerts = {};
   }
 
   /**
@@ -291,6 +301,17 @@ class UnifiedTradingSystem {
    */
   async sendThresholdAlert(type, currentPrice, threshold) {
     try {
+      // Validate inputs
+      if (typeof currentPrice !== 'number' || isNaN(currentPrice)) {
+        console.error('❌ Invalid currentPrice for threshold alert:', currentPrice);
+        return;
+      }
+      
+      if (!threshold || typeof threshold.price !== 'number') {
+        console.error('❌ Invalid threshold for alert:', threshold);
+        return;
+      }
+      
       const alertData = {
         type: `threshold_${type}`,
         price: currentPrice,
@@ -313,6 +334,17 @@ class UnifiedTradingSystem {
    */
   async sendPercentageAlert(currentPrice, percentChange, isDrop) {
     try {
+      // Validate inputs
+      if (typeof currentPrice !== 'number' || isNaN(currentPrice)) {
+        console.error('❌ Invalid currentPrice for percentage alert:', currentPrice);
+        return;
+      }
+      
+      if (typeof percentChange !== 'number' || isNaN(percentChange)) {
+        console.error('❌ Invalid percentChange for percentage alert:', percentChange);
+        return;
+      }
+      
       const direction = isDrop ? 'dropped' : 'rose';
       const emoji = isDrop ? '📉' : '📈';
       const message = `${emoji} BTC ${direction} ${Math.abs(percentChange).toFixed(1)}% to £${currentPrice.toLocaleString()}`;
@@ -339,6 +371,12 @@ class UnifiedTradingSystem {
    */
   async checkBasicPriceAlerts(currentPrice, priceChangePercent) {
     if (!this.config.monitoring.telegramAlerts.enabled || !this.telegramNotifier) {
+      return;
+    }
+    
+    // Validate inputs
+    if (typeof currentPrice !== 'number' || isNaN(currentPrice)) {
+      console.error('❌ Invalid currentPrice for basic price alerts:', currentPrice);
       return;
     }
     
@@ -440,16 +478,36 @@ class UnifiedTradingSystem {
       const priceData = await this.buyer.getCurrentPrice();
       const balances = await this.buyer.getAccountBalances();
       
+      // Validate price data
+      if (!priceData || typeof priceData.price !== 'number' || isNaN(priceData.price)) {
+        console.error('❌ Invalid price data received:', priceData);
+        return;
+      }
+      
       // Update profit tracker with current balances and prices
       this.profitTracker.recordBalance(balances, 'analysis', priceData.price);
       const currentProfit = this.profitTracker.getCurrentProfit();
+      
+      // Check for balance changes that might indicate external BTC sales
+      const currentBtcBalance = balances.BTC?.available || 0;
+      if (this.lastKnownBtcBalance > 0 && this.lastKnownBtcBalance > currentBtcBalance) {
+        const balanceDecrease = this.lastKnownBtcBalance - currentBtcBalance;
+        // Only trigger cleanup if the decrease is significant (more than 0.00001 BTC)
+        if (balanceDecrease > 0.00001) {
+          console.log(`📊 BTC balance decreased from ${this.lastKnownBtcBalance.toFixed(8)} to ${currentBtcBalance.toFixed(8)}`);
+          console.log(`🔄 Cleaning up payment tracking for external sale of ${balanceDecrease.toFixed(8)} BTC`);
+          this.paymentTracker.cleanupPaymentsAfterSale(currentBtcBalance);
+        }
+      }
+      // Update tracked balance
+      this.lastKnownBtcBalance = currentBtcBalance;
       
       // Calculate price change from previous check
       const priceChange = this.previousPrice > 0 ? priceData.price - this.previousPrice : 0;
       const priceChangePercent = this.previousPrice > 0 ? ((priceChange / this.previousPrice) * 100) : 0;
       
-      // Check for price alerts (only if we have a previous price to compare)
-      if (this.previousPrice > 0) {
+      // Check for price alerts (only if we have a previous price to compare and telegram is enabled)
+      if (this.previousPrice > 0 && this.telegramNotifier) {
         await this.checkPriceAlerts(priceData.price, priceChangePercent);
       }
       
@@ -632,9 +690,18 @@ class UnifiedTradingSystem {
   checkSellConditions(priceData, balances, currentProfit) {
     const reasons = [];
     
+    console.log(`🔍 Checking sell conditions:`);
+    console.log(`   Current Price: £${priceData.price.toLocaleString()}`);
+    console.log(`   Price Threshold: £${this.config.selling.priceThreshold.toLocaleString()}`);
+    console.log(`   Current Profit: £${currentProfit.toFixed(2)}`);
+    console.log(`   Profit Target: £${this.config.selling.profitTarget}`);
+    
     // Price threshold selling
     if (priceData.price >= this.config.selling.priceThreshold) {
       reasons.push(`Price above £${this.config.selling.priceThreshold.toLocaleString()}`);
+      console.log(`   ✅ Price threshold met: £${priceData.price.toLocaleString()} >= £${this.config.selling.priceThreshold.toLocaleString()}`);
+    } else {
+      console.log(`   ❌ Price threshold not met: £${priceData.price.toLocaleString()} < £${this.config.selling.priceThreshold.toLocaleString()}`);
     }
     
     // Calculate fees for net profit calculation
@@ -645,31 +712,55 @@ class UnifiedTradingSystem {
     const totalFees = tradingFee + spreadCost + withdrawalFee;
     const netProfit = currentProfit - totalFees;
     
+    console.log(`   Current BTC Value: £${currentBtcValue.toFixed(2)}`);
+    console.log(`   Estimated Fees: £${totalFees.toFixed(2)}`);
+    console.log(`   Net Profit: £${netProfit.toFixed(2)}`);
+    
     // Profit target reached (NET profit after fees)
     if (netProfit >= this.config.selling.profitTarget) {
       reasons.push(`Net profit target £${this.config.selling.profitTarget} reached (after £${totalFees.toFixed(2)} fees)`);
+      console.log(`   ✅ Profit target met: £${netProfit.toFixed(2)} >= £${this.config.selling.profitTarget}`);
+    } else {
+      console.log(`   ❌ Profit target not met: £${netProfit.toFixed(2)} < £${this.config.selling.profitTarget}`);
     }
     
     // BTC holdings profit target (value increase after fees)
+    console.log(`   BTC Profit Target: £${this.config.selling.btcProfitTarget || 'disabled'}`);
     if (this.config.selling.btcProfitTarget && balances.BTC?.available > 0) {
       const currentBtcValue = balances.BTC.available * priceData.price;
-      const initialBtcValue = this.profitTracker.config.initialBalance || 50.012315; // fallback to known initial
+      const initialBtcValue = 200; // Initial BTC investment was £200
       const btcGain = currentBtcValue - initialBtcValue;
+      
+      console.log(`   Current BTC Value: £${currentBtcValue.toFixed(2)}`);
+      console.log(`   Initial BTC Investment: £${initialBtcValue.toFixed(2)}`);
+      console.log(`   BTC Gain: £${btcGain.toFixed(2)}`);
       
       // Estimate selling fees to ensure net profit meets target
       const estimatedSellFees = currentBtcValue * (0.005 + 0.0025) + 0.15; // trading + spread + withdrawal
       const netBtcProfit = btcGain - estimatedSellFees;
       
+      console.log(`   Estimated Sell Fees: £${estimatedSellFees.toFixed(2)}`);
+      console.log(`   Net BTC Profit: £${netBtcProfit.toFixed(2)}`);
+      
       if (netBtcProfit >= this.config.selling.btcProfitTarget) {
         reasons.push(`BTC profit target £${this.config.selling.btcProfitTarget} reached (net: £${netBtcProfit.toFixed(2)})`);
+        console.log(`   ✅ BTC profit target met: £${netBtcProfit.toFixed(2)} >= £${this.config.selling.btcProfitTarget}`);
+      } else {
+        console.log(`   ❌ BTC profit target not met: £${netBtcProfit.toFixed(2)} < £${this.config.selling.btcProfitTarget}`);
       }
     }
     
     // Percentage gain from recent low
+    console.log(`   Recent Low: £${this.recentLow < Infinity ? this.recentLow.toLocaleString() : 'N/A'}`);
     if (this.recentLow < Infinity) {
       const gainPercent = ((priceData.price - this.recentLow) / this.recentLow) * 100;
+      console.log(`   Gain from Recent Low: ${gainPercent.toFixed(1)}%`);
+      console.log(`   Percentage Gain Threshold: ${this.config.selling.percentageGain}%`);
       if (gainPercent >= this.config.selling.percentageGain) {
         reasons.push(`${gainPercent.toFixed(1)}% gain from recent low`);
+        console.log(`   ✅ Percentage gain threshold met: ${gainPercent.toFixed(1)}% >= ${this.config.selling.percentageGain}%`);
+      } else {
+        console.log(`   ❌ Percentage gain threshold not met: ${gainPercent.toFixed(1)}% < ${this.config.selling.percentageGain}%`);
       }
     }
     
@@ -705,12 +796,58 @@ class UnifiedTradingSystem {
   }
 
   /**
+   * Check for payments that are now profitable and send alerts
+   */
+  async checkPaymentProfitAlerts(currentBtcPrice) {
+    if (!this.telegramNotifier || !this.paymentTracker) return;
+    
+    try {
+      const profitTarget = this.config.selling.profitTarget || 10;
+      const profitablePayments = this.paymentTracker.checkProfitablePayments(
+        currentBtcPrice, 
+        profitTarget, 
+        this.paymentAlerts
+      );
+      
+      // Send alerts for payments that should be alerted
+      for (const payment of profitablePayments) {
+        if (payment.shouldAlert) {
+          const message = `💰 <b>Payment Ready to Sell!</b>
+
+📦 <b>Payment ${payment.id}</b> (${payment.date})
+💷 Original Cost: £${payment.gbpAmount.toFixed(2)}
+₿ BTC Amount: ${payment.btcAmount.toFixed(8)} BTC
+📈 Purchase Price: £${payment.btcPrice.toLocaleString()}
+💰 Current Value: £${payment.currentValue.toFixed(2)}
+
+🎯 <b>Profit Analysis:</b>
+✅ Net Profit: £${payment.netProfit.toFixed(2)}
+🎯 Target: £${profitTarget.toFixed(2)}
+🚀 Excess: £${payment.profitExcess.toFixed(2)}
+📊 Profit %: ${payment.profitPercent.toFixed(1)}%
+📅 Days Held: ${payment.daysHeld}
+
+<i>This payment has reached your £${profitTarget} profit target and is ready to sell!</i>`;
+
+          await this.telegramNotifier.sendMessage(message);
+          console.log(`📱 Sent profit alert for payment ${payment.id} (£${payment.netProfit.toFixed(2)} profit)`);
+        }
+      }
+    } catch (error) {
+      console.error('⚠️ Error checking payment profit alerts:', error.message);
+    }
+  }
+
+  /**
    * Execute automated trading cycle
    */
   async executeAutomatedTrading() {
     try {
       const analysis = await this.analyzeTradingOpportunity();
       if (!analysis) return false;
+      
+      // Check for individual payments that are now profitable and ready to sell
+      await this.checkPaymentProfitAlerts(analysis.priceData.price);
       
       let executed = false;
       
@@ -735,6 +872,17 @@ class UnifiedTradingSystem {
               buyAmount, 
               'automated: ' + analysis.decisions.reasons.join(', ')
             );
+            
+            // Record payment for tracking individual purchase performance
+            if (result && result.success) {
+              const btcPurchased = result.btcAmount || (buyAmount / analysis.priceData.price);
+              this.paymentTracker.recordPayment(
+                buyAmount,
+                btcPurchased,
+                analysis.priceData.price,
+                'auto-buy'
+              );
+            }
             
             // Send Telegram buy notification
             if (this.telegramNotifier) {
@@ -762,6 +910,45 @@ class UnifiedTradingSystem {
         const balances = await this.buyer.getAccountBalances();
         const sellAmount = this.getRandomizedSellAmount(balances.BTC?.available || 0);
         const currentProfit = this.profitTracker.getCurrentProfit();
+        
+        // Calculate actual profit from selling this specific amount using payment tracker
+        const sellValue = sellAmount * analysis.priceData.price;
+        const sellingFees = sellValue * 0.0083; // 0.83% Coinbase fee
+        const netProceeds = sellValue - sellingFees;
+        
+        // Use payment tracker to get accurate cost basis for this sell amount (FIFO)
+        let actualCostBasis = 0;
+        let remainingSellAmount = sellAmount;
+        
+        for (const payment of this.paymentTracker.payments.filter(p => p.status === 'active')) {
+          if (remainingSellAmount <= 0) break;
+          
+          const sellFromThisPayment = Math.min(remainingSellAmount, payment.btcAmount);
+          const costBasisForThisPortion = (sellFromThisPayment / payment.btcAmount) * payment.gbpAmount;
+          actualCostBasis += costBasisForThisPortion;
+          remainingSellAmount -= sellFromThisPayment;
+        }
+        
+        const actualProfit = netProceeds - actualCostBasis;
+        
+        console.log(`💰 Sell Analysis for ${sellAmount.toFixed(8)} BTC:`);
+        console.log(`   Sell Value: £${sellValue.toFixed(2)}`);
+        console.log(`   Selling Fees: £${sellingFees.toFixed(2)}`);
+        console.log(`   Net Proceeds: £${netProceeds.toFixed(2)}`);
+        console.log(`   Actual Cost Basis (FIFO): £${actualCostBasis.toFixed(2)}`);
+        console.log(`   Actual Profit: £${actualProfit.toFixed(2)}`);
+        console.log(`   Cost Basis Breakdown:`);
+        
+        // Log cost basis breakdown for verification
+        let tempSellAmount = sellAmount;
+        for (const payment of this.paymentTracker.payments.filter(p => p.status === 'active')) {
+          if (tempSellAmount <= 0) break;
+          const sellFromThisPayment = Math.min(tempSellAmount, payment.btcAmount);
+          const costBasisForThisPortion = (sellFromThisPayment / payment.btcAmount) * payment.gbpAmount;
+          console.log(`     ${sellFromThisPayment.toFixed(8)} BTC from payment ${payment.id.slice(-8)} @ £${payment.btcPrice.toFixed(0)} = £${costBasisForThisPortion.toFixed(2)}`);
+          tempSellAmount -= sellFromThisPayment;
+        }
+        
         const requireManualApproval = this.config.safety.requireManualApproval || 
           (this.telegramConfig?.alerts?.manualApproval?.enabled && this.telegramConfig?.alerts?.manualApproval?.requireSellApproval);
         
@@ -769,9 +956,16 @@ class UnifiedTradingSystem {
           console.log('🤖 Sell opportunity detected, but manual approval required');
           console.log('   Reasons:', analysis.decisions.reasons.join(', '));
           
-          // Send Telegram sell confirmation request
+          // Send Telegram sell confirmation request with corrected profit calculation
           if (this.telegramNotifier) {
-            await this.telegramNotifier.sendSellConfirmation(sellAmount, analysis.priceData.price, currentProfit, false);
+            // Safety check: don't send sell alert if profit calculation seems wrong
+            if (actualProfit > sellValue) {
+              console.error(`❌ Invalid profit calculation detected:`);
+              console.error(`   Profit (£${actualProfit.toFixed(2)}) > Sell Value (£${sellValue.toFixed(2)})`);
+              console.error(`   This suggests an error in cost basis calculation. Skipping sell alert.`);
+            } else {
+              await this.telegramNotifier.sendSellConfirmation(sellAmount, analysis.priceData.price, actualProfit, false);
+            }
           }
         } else {
           console.log('💰 Sell opportunity detected - scheduling with human-like timing...');
@@ -786,6 +980,18 @@ class UnifiedTradingSystem {
             };
             
             const result = await this.seller.executeBTCtoGBP(sellAmount, withdrawalOptions);
+            
+            // Clean up payment tracking after successful sale
+            if (result && result.success) {
+              // Get updated balance to clean up payments
+              try {
+                const updatedBalances = await this.buyer.getAccountBalances();
+                const remainingBtc = updatedBalances.BTC?.available || 0;
+                this.paymentTracker.cleanupPaymentsAfterSale(remainingBtc);
+              } catch (error) {
+                console.log('⚠️ Could not update payment tracking after sale:', error.message);
+              }
+            }
             
             // Send Telegram sell notification
             if (this.telegramNotifier) {
@@ -982,10 +1188,17 @@ class UnifiedTradingSystem {
       const nextExecutionTime = Date.now() + randomInterval;
       const willBeTradingHours = this.timingController.isTradingAllowedAt(nextExecutionTime);
       
+      // Format exact time for display
+      const exactTime = new Date(nextExecutionTime).toLocaleTimeString('en-GB', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false 
+      });
+      
       if (willBeTradingHours) {
-        console.log(`🤖 Next trading evaluation in ${timeStr} ✅ (during trading hours)`);
+        console.log(`🤖 Next trading evaluation in ${timeStr} at ${exactTime} ✅ (during trading hours)`);
       } else {
-        console.log(`🤖 Next trading evaluation in ${timeStr} ⏸️ (outside trading hours - will queue)`);
+        console.log(`🤖 Next trading evaluation in ${timeStr} at ${exactTime} ⏸️ (outside trading hours - will queue)`);
       }
       
     } else {
@@ -1000,10 +1213,17 @@ class UnifiedTradingSystem {
       
       const timeStr = this.formatTime(randomInterval);
       
+      // Format exact time for display
+      const exactTime = new Date(nextExecutionTime).toLocaleTimeString('en-GB', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false 
+      });
+      
       if (willBeTradingHours) {
-        console.log(`🤖 Next trading evaluation in ${timeStr} ✅ (during trading hours)`);
+        console.log(`🤖 Next trading evaluation in ${timeStr} at ${exactTime} ✅ (during trading hours)`);
       } else {
-        console.log(`🤖 Next trading evaluation in ${timeStr} ⏸️ (outside trading hours - will queue)`);
+        console.log(`🤖 Next trading evaluation in ${timeStr} at ${exactTime} ⏸️ (outside trading hours - will queue)`);
       }
     }
     

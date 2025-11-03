@@ -13,13 +13,22 @@ const port = 3001;
 // Serve static files from public directory
 app.use(express.static('public'));
 
+// Parse JSON bodies
+app.use(express.json());
+
 // Create a trader instance for getting analysis
 let trader = null;
 
 async function initializeTrader() {
   try {
+    // Create trader instance with disabled telegram for dashboard
     trader = new UnifiedTrader();
-    console.log('📊 Trader initialized for web dashboard');
+    
+    // Disable telegram notifications for dashboard instance to avoid conflicts
+    trader.telegramNotifier = null;
+    trader.telegramConfig = null;
+    
+    console.log('📊 Trader initialized for web dashboard (Telegram disabled)');
   } catch (error) {
     console.error('⚠️ Error initializing trader for dashboard:', error.message);
   }
@@ -44,7 +53,18 @@ app.get('/api/trading-analysis', async (req, res) => {
     // Extract data from analysis
     const btcBalance = analysis.balances?.BTC?.balance || 0;
     const gbpBalance = analysis.balances?.GBP?.balance || 0;
-    const currentPrice = analysis.price;
+  const currentPrice = analysis.price;
+  const currentAsk = analysis.priceData?.ask || null;
+    
+    // Validate current price
+    if (typeof currentPrice !== 'number' || isNaN(currentPrice)) {
+      console.error('❌ Invalid price data in analysis:', currentPrice);
+      return res.status(500).json({
+        error: 'Invalid price data',
+        message: 'Unable to get valid BTC price data'
+      });
+    }
+    
     const btcValue = btcBalance * currentPrice;
     
     // Calculate profit metrics
@@ -63,9 +83,14 @@ app.get('/api/trading-analysis', async (req, res) => {
     const sellingFeesPercent = 0.83;
     const sellingResult = currentProfit - sellingFees;
     
+    // Get payment tracking data
+    const paymentSummary = trader.paymentTracker.getPaymentSummary(currentPrice);
+    const individualPayments = trader.paymentTracker.getPaymentStatuses(currentPrice);
+    
     // Format response data matching the dashboard expectations
     const responseData = {
       currentPrice: currentPrice,
+      currentAsk: currentAsk,
       tradingStatus: 'Active Trading',
       btcAmount: btcBalance,
       btcValue: btcValue,
@@ -91,6 +116,10 @@ app.get('/api/trading-analysis', async (req, res) => {
         maxBuy: config.buying.maxBuyAmount,
         maxSell: config.selling.maxSellAmount
       },
+      paymentTracking: {
+        summary: paymentSummary,
+        individualPayments: individualPayments
+      },
       timestamp: new Date().toISOString()
     };
     
@@ -100,6 +129,56 @@ app.get('/api/trading-analysis', async (req, res) => {
     console.error('⚠️ Error getting trading analysis:', error.message);
     res.status(500).json({ 
       error: 'Failed to get trading analysis',
+      message: error.message 
+    });
+  }
+});
+
+// API endpoint to sell an individual payment
+app.post('/api/sell-payment', async (req, res) => {
+  try {
+    if (!trader) {
+      return res.status(503).json({ 
+        error: 'Trading system not initialized',
+        message: 'Please start the auto-trading system first'
+      });
+    }
+
+    const { paymentId } = req.body;
+    
+    if (!paymentId) {
+      return res.status(400).json({ 
+        error: 'Payment ID required',
+        message: 'Please provide a paymentId in the request body'
+      });
+    }
+
+    // Get current BTC price for the sale
+    const analysis = await trader.analyzeTradingOpportunity();
+    const currentPrice = analysis.price;
+
+    if (!currentPrice || currentPrice <= 0) {
+      return res.status(500).json({ 
+        error: 'Unable to get current BTC price',
+        message: 'Cannot process sale without current market price'
+      });
+    }
+
+    // Process the individual payment sale
+    const saleResult = trader.paymentTracker.sellIndividualPayment(paymentId, currentPrice);
+    
+    // Return sale details
+    res.json({
+      success: true,
+      message: 'Payment sold successfully',
+      sale: saleResult,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('⚠️ Error selling payment:', error.message);
+    res.status(400).json({ 
+      error: 'Failed to sell payment',
       message: error.message 
     });
   }
