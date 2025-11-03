@@ -1,0 +1,72 @@
+{
+  "trading": {
+    "dryRun": true,
+    "sandbox": true,
+    "maxTradeAmount": 0.01,
+    "minTradeValue": 50,
+    "comment": "Safety limits - maxTradeAmount in BTC, minTradeValue in GBP"
+  },
+  "fees": {
+    "trading": {
+      "maker": 0.005,
+      "taker": 0.005,
+      "comment": "Coinbase Pro trading fees (0.5% each)"
+    },
+    "withdrawal": {
+      "gbp": 0.15,
+      "minimum": 10,
+      "comment": "GBP withdrawal fee £0.15, minimum £10"
+    },
+    "spread": 0.0025,
+    "comment": "Estimated spread cost (0.25%)"
+  },
+  "api": {
+    "baseUrl": "api-public.sandbox.exchange.coinbase.com",
+    "timeout": 10000,
+    "comment": "Use sandbox for testing, production: api.exchange.coinbase.com"
+  },
+  "automation": {
+    "enabled": false,
+    "strategies": {
+      "priceTarget": {
+        "enabled": false,
+        "targetPrice": 90000,
+        "amount": 0.005,
+        "comment": "Sell 0.005 BTC when price reaches £90,000"
+      },
+      "percentageGain": {
+        "enabled": false,
+        "gainPercent": 10,
+        "basePrice": 80000,
+        "amount": 0.01,
+        "comment": "Sell 0.01 BTC when price gains 10% from £80,000"
+      },
+      "stopLoss": {
+        "enabled": false,
+        "stopPercent": 5,
+        "amount": 0.02,
+        "comment": "Sell 0.02 BTC if price drops 5% from peak"
+      }
+    }
+  },
+  "logging": {
+    "enabled": true,
+    "logFile": "trading-log.json",
+    "maxLogEntries": 1000,
+    "comment": "Trading history and audit trail"
+  },
+  "profitTracking": {
+    "enabled": true,
+    "profitThreshold": 10,
+    "initialBalance": null,
+    "alerts": {
+      "enabled": true,
+      "profitAlert": true,
+      "lossAlert": true,
+      "milestoneAlert": true,
+      "sound": false
+    },
+    "milestones": [10, 25, 50, 100, 250, 500, 1000],
+    "comment": "Profit tracking settings - threshold in GBP, milestones array"
+  }
+}

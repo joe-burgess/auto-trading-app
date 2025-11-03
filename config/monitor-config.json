@@ -1,0 +1,19 @@
+{
+  "interval": 30000,
+  "priceAlerts": {
+    "enabled": true,
+    "upThreshold": 500,
+    "downThreshold": 500,
+    "percentageUp": 2,
+    "percentageDown": 2
+  },
+  "notifications": {
+    "console": true,
+    "sound": false
+  },
+  "logging": {
+    "enabled": true,
+    "logFile": "data/btc-price-history.json"
+  },
+  "comment": "Price monitoring configuration - intervals in milliseconds, thresholds in GBP"
+}

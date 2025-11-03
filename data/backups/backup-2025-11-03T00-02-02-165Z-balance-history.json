@@ -1,0 +1,29 @@
+[
+  {
+    "timestamp": "2025-11-02T23:10:00.000Z",
+    "type": "initial_setup",
+    "balances": {
+      "GBP": {
+        "total": 0,
+        "available": 0,
+        "held": 0
+      },
+      "BTC": {
+        "total": 0.0035,
+        "available": 0.0035,
+        "held": 0
+      }
+    },
+    "btcPrice": 14289.09,
+    "portfolioValue": {
+      "gbpValue": 0,
+      "btcValue": 50.012315,
+      "totalValue": 50.012315
+    },
+    "profitLoss": {
+      "absolute": 0,
+      "percentage": 0
+    },
+    "note": "Starting balance: 0.0035 BTC (£50 worth) + £0 GBP"
+  }
+]

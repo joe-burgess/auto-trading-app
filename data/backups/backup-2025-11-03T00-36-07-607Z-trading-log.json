@@ -1,0 +1,64 @@
+[
+  {
+    "timestamp": "2025-11-03T00:32:44.778Z",
+    "btcAmount": 0.003,
+    "priceData": {
+      "price": 83992.23,
+      "bid": 83974.01,
+      "ask": 84000.04,
+      "volume": 53.05667826,
+      "spread": 26.029999999998836,
+      "spreadPercent": 0.030990961902069795,
+      "orderBook": {
+        "bestBid": 83984.33,
+        "bestAsk": 83997.56,
+        "bidSize": 0.00030799,
+        "askSize": 0.00109753
+      },
+      "timestamp": "2025-11-03T00:32:44.827Z"
+    },
+    "feeCalculation": {
+      "btcAmount": 0.003,
+      "btcPrice": 83974.01,
+      "grossGbpValue": 251.92202999999998,
+      "fees": {
+        "trading": 1.2596101499999999,
+        "spread": 0.6298050749999999,
+        "withdrawal": 0.15,
+        "total": 2.039415225
+      },
+      "netAfterTrading": 250.03261477499998,
+      "finalAmount": 249.88261477499998,
+      "effectiveRate": 83294.204925,
+      "feePercentage": 0.8095422321739782
+    },
+    "order": {
+      "id": "sim_1762129964878",
+      "type": "market",
+      "side": "sell",
+      "product_id": "BTC-GBP",
+      "size": "0.003",
+      "status": "filled",
+      "filled_size": "0.003",
+      "executed_value": "251.92202999999998",
+      "fill_fees": "1.2596101499999999",
+      "created_at": "2025-11-03T00:32:44.878Z",
+      "done_at": "2025-11-03T00:32:44.878Z",
+      "simulated": true
+    },
+    "balancesBefore": {
+      "BTC": {
+        "balance": 0.0035,
+        "available": 0.0035,
+        "hold": 0
+      },
+      "GBP": {
+        "balance": 0,
+        "available": 0,
+        "hold": 0
+      }
+    },
+    "type": "BTC_TO_GBP_CONVERSION",
+    "status": "completed"
+  }
+]

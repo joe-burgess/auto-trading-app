@@ -1,0 +1,96 @@
+{
+  "unifiedTrading": {
+    "enabled": true,
+    "dryRun": true,    "profitTracking": {
+    "enabled": true,
+    "profitThreshold": 10,
+    "initialBalance": 50.012315, "sandbox": true,
+    "comment": "Master control for the unified trading system"
+  },
+  "buying": {
+    "enabled": true,
+    "priceThreshold": 80000,
+    "percentageDrop": 3,
+    "maxBuyAmount": 50,
+    "maxDailyBuying": 200,
+    "minAccountBalance": 200,
+    "maxBtcHolding": 0.05,
+    "postSellDropThreshold": 10,
+    "comment": "BTC buying configuration - postSellDropThreshold prevents buying until price drops £10 from last sell"
+  },
+  "selling": {
+    "enabled": true,
+    "priceThreshold": 90000,
+    "percentageGain": 5,
+    "maxSellAmount": 0.01,
+    "profitTarget": 10,
+    "autoWithdrawToBank": true,
+    "minWithdrawalAmount": 50,
+    "withdrawalDelay": 0,
+    "keepMinimumGbpBalance": 100,
+    "comment": "BTC selling configuration - autoWithdrawToBank: auto-withdraw to bank, minWithdrawalAmount: minimum amount for withdrawal, withdrawalDelay: minutes to wait before withdrawal, keepMinimumGbpBalance: minimum GBP to keep in Coinbase"
+  },
+  "strategy": {
+    "buyLowSellHigh": true,
+    "dollarCostAveraging": false,
+    "profitTaking": true,
+    "stopLoss": false,
+    "stopLossPercent": 10,
+    "comment": "Trading strategy settings"
+  },
+  "monitoring": {
+    "interval": 60000,
+    "enableAlerts": true,
+    "logAllDecisions": true,
+    "comment": "Monitoring interval in milliseconds (60000 = 1 minute)"
+  },
+  "safety": {
+    "maxDailyTrades": 10,
+    "cooldownBetweenTrades": 300000,
+    "requireManualApproval": false,
+    "comment": "Safety limits - cooldown in milliseconds (300000 = 5 minutes)"
+  },
+  "fees": {
+    "trading": {
+      "maker": 0.005,
+      "taker": 0.005,
+      "comment": "Coinbase Pro trading fees (0.5% each)"
+    },
+    "withdrawal": {
+      "gbp": 0.15,
+      "minimum": 10,
+      "comment": "GBP withdrawal fee £0.15, minimum £10"
+    },
+    "spread": 0.0025,
+    "comment": "Estimated spread cost (0.25%)"
+  },
+  "profitTracking": {
+    "enabled": true,
+    "profitThreshold": 10,
+    "initialBalance": 50.012315,
+    "alerts": {
+      "enabled": true,
+      "profitAlert": true,
+      "lossAlert": true,
+      "milestoneAlert": true,
+      "sound": false
+    },
+    "milestoneMode": "static",
+    "fixedMilestoneIncrement": 10,
+    "staticMilestoneAmount": 10,
+    "milestones": [10, 25, 50, 100, 250, 500, 1000],
+    "comment": "Profit tracking - milestoneMode: 'progressive' (uses milestones array), 'fixed' (uses fixedMilestoneIncrement), or 'static' (uses staticMilestoneAmount)"
+  },
+  "api": {
+    "baseUrl": "api-public.sandbox.exchange.coinbase.com",
+    "timeout": 10000,
+    "retries": 3,
+    "comment": "Use sandbox for testing, production: api.exchange.coinbase.com"
+  },
+  "examples": {
+    "buyScenario": "When BTC drops to £80,000 or falls 3% from recent high, buy £50 worth",
+    "sellScenario": "When BTC rises to £90,000 or gains 5% from recent low, sell 0.01 BTC",
+    "profitScenario": "When total profit reaches £10, alert and consider selling",
+    "safetyScenario": "Maximum 10 trades per day with 5-minute cooldown between trades"
+  }
+}

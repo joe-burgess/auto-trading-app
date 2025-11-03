@@ -1,0 +1,53 @@
+[
+  {
+    "timestamp": "2025-11-03T00:02:02.164Z",
+    "type": "initial_balance",
+    "balances": {
+      "GBP": {
+        "total": 0,
+        "available": 0,
+        "held": 0
+      },
+      "BTC": {
+        "total": 0.0035,
+        "available": 0.0035,
+        "held": 0
+      }
+    },
+    "btcPrice": 14289.09,
+    "portfolioValue": {
+      "gbp": 0,
+      "btc": 50.012315,
+      "total": 50.012315
+    },
+    "note": "Initial balance: £50.01 worth of BTC (0.0035 BTC) + £0 GBP"
+  },
+  {
+    "timestamp": "2025-11-03T00:27:34.190Z",
+    "type": "milestone",
+    "milestone": 10,
+    "currentProfit": 244.21711,
+    "description": "£10 profit milestone achieved"
+  },
+  {
+    "timestamp": "2025-11-03T00:27:34.191Z",
+    "type": "milestone",
+    "milestone": 25,
+    "currentProfit": 244.21711,
+    "description": "£25 profit milestone achieved"
+  },
+  {
+    "timestamp": "2025-11-03T00:27:34.194Z",
+    "type": "milestone",
+    "milestone": 50,
+    "currentProfit": 244.21711,
+    "description": "£50 profit milestone achieved"
+  },
+  {
+    "timestamp": "2025-11-03T00:27:34.195Z",
+    "type": "milestone",
+    "milestone": 100,
+    "currentProfit": 244.21711,
+    "description": "£100 profit milestone achieved"
+  }
+]

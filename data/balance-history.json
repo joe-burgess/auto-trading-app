@@ -1,0 +1,369 @@
+[
+  {
+    "timestamp": "2025-11-03T00:36:07.483Z",
+    "type": "initial_setup",
+    "balances": {
+      "GBP": {
+        "total": 0,
+        "available": 0,
+        "held": 0
+      },
+      "BTC": {
+        "total": 0.00059556,
+        "available": 0.00059556,
+        "held": 0
+      }
+    },
+    "btcPrice": 83954.15,
+    "portfolioValue": {
+      "gbpValue": 0,
+      "btcValue": 50,
+      "totalValue": 50
+    },
+    "profitLoss": {
+      "absolute": 0,
+      "percentage": 0
+    },
+    "note": "Starting balance: 0.00059556 BTC (£50 worth) + £0 GBP"
+  },
+  {
+    "timestamp": "2025-11-03T00:38:28.855Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83958.57,
+    "btcValueInGbp": 50.002365949200005,
+    "totalBalance": 50.002365949200005,
+    "profitLoss": 0.002365949200004991
+  },
+  {
+    "timestamp": "2025-11-03T00:40:11.332Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83949.56,
+    "btcValueInGbp": 49.996999953599996,
+    "totalBalance": 49.996999953599996,
+    "profitLoss": -0.003000046400003953
+  },
+  {
+    "timestamp": "2025-11-03T00:41:11.440Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83975.07,
+    "btcValueInGbp": 50.0121926892,
+    "totalBalance": 50.0121926892,
+    "profitLoss": 0.012192689199999052
+  },
+  {
+    "timestamp": "2025-11-03T00:42:11.327Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83926.29,
+    "btcValueInGbp": 49.98314127239999,
+    "totalBalance": 49.98314127239999,
+    "profitLoss": -0.016858727600009615
+  },
+  {
+    "timestamp": "2025-11-03T00:43:11.332Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83934.81,
+    "btcValueInGbp": 49.9882154436,
+    "totalBalance": 49.9882154436,
+    "profitLoss": -0.011784556400002089
+  },
+  {
+    "timestamp": "2025-11-03T00:44:11.461Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83919.42,
+    "btcValueInGbp": 49.9790497752,
+    "totalBalance": 49.9790497752,
+    "profitLoss": -0.020950224800003525
+  },
+  {
+    "timestamp": "2025-11-03T00:45:11.488Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83925.35,
+    "btcValueInGbp": 49.982581446,
+    "totalBalance": 49.982581446,
+    "profitLoss": -0.017418554000002473
+  },
+  {
+    "timestamp": "2025-11-03T00:46:11.468Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83950.23,
+    "btcValueInGbp": 49.99739897879999,
+    "totalBalance": 49.99739897879999,
+    "profitLoss": -0.0026010212000073807
+  },
+  {
+    "timestamp": "2025-11-03T00:47:11.446Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83904.27,
+    "btcValueInGbp": 49.9700270412,
+    "totalBalance": 49.9700270412,
+    "profitLoss": -0.029972958800001948
+  },
+  {
+    "timestamp": "2025-11-03T00:48:11.464Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83903.37,
+    "btcValueInGbp": 49.969491037199994,
+    "totalBalance": 49.969491037199994,
+    "profitLoss": -0.030508962800006145
+  },
+  {
+    "timestamp": "2025-11-03T00:49:11.336Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83873.9,
+    "btcValueInGbp": 49.95193988399999,
+    "totalBalance": 49.95193988399999,
+    "profitLoss": -0.048060116000009145
+  },
+  {
+    "timestamp": "2025-11-03T00:50:11.344Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83873.9,
+    "btcValueInGbp": 49.95193988399999,
+    "totalBalance": 49.95193988399999,
+    "profitLoss": -0.048060116000009145
+  },
+  {
+    "timestamp": "2025-11-03T00:51:11.369Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83875.76,
+    "btcValueInGbp": 49.95304762559999,
+    "totalBalance": 49.95304762559999,
+    "profitLoss": -0.0469523744000071
+  },
+  {
+    "timestamp": "2025-11-03T00:52:11.369Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83870.81,
+    "btcValueInGbp": 49.950099603599995,
+    "totalBalance": 49.950099603599995,
+    "profitLoss": -0.04990039640000532
+  },
+  {
+    "timestamp": "2025-11-03T00:53:11.342Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83703.36,
+    "btcValueInGbp": 49.8503730816,
+    "totalBalance": 49.8503730816,
+    "profitLoss": -0.14962691840000275
+  },
+  {
+    "timestamp": "2025-11-03T00:54:11.351Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83731.2,
+    "btcValueInGbp": 49.866953472,
+    "totalBalance": 49.866953472,
+    "profitLoss": -0.13304652800000127
+  },
+  {
+    "timestamp": "2025-11-03T00:55:11.345Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83752.37,
+    "btcValueInGbp": 49.87956147719999,
+    "totalBalance": 49.87956147719999,
+    "profitLoss": -0.12043852280000777
+  },
+  {
+    "timestamp": "2025-11-03T00:56:11.460Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83675.3,
+    "btcValueInGbp": 49.833661668,
+    "totalBalance": 49.833661668,
+    "profitLoss": -0.16633833200000225
+  },
+  {
+    "timestamp": "2025-11-03T00:57:11.474Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83600,
+    "btcValueInGbp": 49.788816,
+    "totalBalance": 49.788816,
+    "profitLoss": -0.21118400000000292
+  },
+  {
+    "timestamp": "2025-11-03T00:58:11.386Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83556.82,
+    "btcValueInGbp": 49.7630997192,
+    "totalBalance": 49.7630997192,
+    "profitLoss": -0.23690028080000047
+  },
+  {
+    "timestamp": "2025-11-03T01:02:39.061Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83441.66,
+    "btcValueInGbp": 49.6945150296,
+    "totalBalance": 49.6945150296,
+    "profitLoss": -0.305484970400002
+  },
+  {
+    "timestamp": "2025-11-03T01:20:15.713Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83504.67,
+    "btcValueInGbp": 49.732041265199996,
+    "totalBalance": 49.732041265199996,
+    "profitLoss": -0.2679587348000041
+  },
+  {
+    "timestamp": "2025-11-03T01:21:22.438Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83541.57,
+    "btcValueInGbp": 49.754017429200005,
+    "totalBalance": 49.754017429200005,
+    "profitLoss": -0.24598257079999541
+  },
+  {
+    "timestamp": "2025-11-03T01:22:15.160Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83497.46,
+    "btcValueInGbp": 49.7277472776,
+    "totalBalance": 49.7277472776,
+    "profitLoss": -0.27225272239999754
+  },
+  {
+    "timestamp": "2025-11-03T01:22:27.467Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83469.75,
+    "btcValueInGbp": 49.71124431,
+    "totalBalance": 49.71124431,
+    "profitLoss": -0.2887556900000021
+  },
+  {
+    "timestamp": "2025-11-03T01:23:17.216Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83415.1,
+    "btcValueInGbp": 49.678696956,
+    "totalBalance": 49.678696956,
+    "profitLoss": -0.3213030439999969
+  },
+  {
+    "timestamp": "2025-11-03T01:24:08.512Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83418.95,
+    "btcValueInGbp": 49.680989862,
+    "totalBalance": 49.680989862,
+    "profitLoss": -0.319010138000003
+  },
+  {
+    "timestamp": "2025-11-03T01:25:22.284Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83399.59,
+    "btcValueInGbp": 49.66945982039999,
+    "totalBalance": 49.66945982039999,
+    "profitLoss": -0.3305401796000069
+  },
+  {
+    "timestamp": "2025-11-03T01:26:26.708Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83396.45,
+    "btcValueInGbp": 49.667589762,
+    "totalBalance": 49.667589762,
+    "profitLoss": -0.33241023800000136
+  },
+  {
+    "timestamp": "2025-11-03T01:27:04.639Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83367.28,
+    "btcValueInGbp": 49.6502172768,
+    "totalBalance": 49.6502172768,
+    "profitLoss": -0.3497827232000006
+  },
+  {
+    "timestamp": "2025-11-03T01:32:41.428Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83487.62,
+    "btcValueInGbp": 49.72188696719999,
+    "totalBalance": 49.72188696719999,
+    "profitLoss": -0.27811303280000743
+  },
+  {
+    "timestamp": "2025-11-03T01:33:51.351Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83513.37,
+    "btcValueInGbp": 49.73722263719999,
+    "totalBalance": 49.73722263719999,
+    "profitLoss": -0.2627773628000085
+  },
+  {
+    "timestamp": "2025-11-03T01:36:41.169Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83267.65,
+    "btcValueInGbp": 49.59088163399999,
+    "totalBalance": 49.59088163399999,
+    "profitLoss": -0.4091183660000084
+  },
+  {
+    "timestamp": "2025-11-03T01:38:10.142Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.00059556,
+    "btcPrice": 83385.95,
+    "btcValueInGbp": 49.661336381999995,
+    "totalBalance": 49.661336381999995,
+    "profitLoss": -0.33866361800000533
+  }
+]

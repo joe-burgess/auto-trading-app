@@ -1,0 +1,59 @@
+[
+  {
+    "timestamp": "2025-11-03T00:32:25.455Z",
+    "type": "initial_setup",
+    "balances": {
+      "GBP": {
+        "total": 0,
+        "available": 0,
+        "held": 0
+      },
+      "BTC": {
+        "total": 0.0035,
+        "available": 0.0035,
+        "held": 0
+      }
+    },
+    "btcPrice": 14289.09,
+    "portfolioValue": {
+      "gbpValue": 0,
+      "btcValue": 50.012315,
+      "totalValue": 50.012315
+    },
+    "profitLoss": {
+      "absolute": 0,
+      "percentage": 0
+    },
+    "note": "Starting balance: 0.0035 BTC (£50.01 worth) + £0 GBP"
+  },
+  {
+    "timestamp": "2025-11-03T00:32:44.761Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.0035,
+    "btcPrice": 83992.23,
+    "btcValueInGbp": 293.972805,
+    "totalBalance": 293.972805,
+    "profitLoss": 243.96049
+  },
+  {
+    "timestamp": "2025-11-03T00:33:44.864Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.0035,
+    "btcPrice": 83970,
+    "btcValueInGbp": 293.895,
+    "totalBalance": 293.895,
+    "profitLoss": 243.88268499999998
+  },
+  {
+    "timestamp": "2025-11-03T00:34:44.777Z",
+    "source": "analysis",
+    "gbpBalance": 0,
+    "btcBalance": 0.0035,
+    "btcPrice": 83960.34,
+    "btcValueInGbp": 293.86119,
+    "totalBalance": 293.86119,
+    "profitLoss": 243.84887500000002
+  }
+]

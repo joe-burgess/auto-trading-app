@@ -1,0 +1,49 @@
+{
+  "name": "auto-trading-app",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js",
+    "btc-price": "node btc-price.js",
+    "btc-monitor": "node btc-monitor.js monitor",
+    "btc-stats": "node btc-monitor.js stats",
+    "btc-history": "node btc-monitor.js history",
+    "trade-price": "node btc-trader.js price",
+    "trade-calculate": "node btc-trader.js calculate",
+    "trade-simulate": "node btc-trader.js simulate",
+    "trade-balance": "node btc-trader.js balance",
+    "trade-stats": "node btc-trader.js stats",
+    "buy-monitor": "node btc-buyer.js monitor",
+    "buy-calculate": "node btc-buyer.js calculate",
+    "buy-check": "node btc-buyer.js check",
+    "buy-stats": "node btc-buyer.js stats",
+    "auto-trade": "node unified-trader.js start",
+    "trade-status": "node unified-trader.js status",
+    "trade-analyze": "node unified-trader.js analyze",
+    "profit-report": "node profit-tracker.js report",
+    "profit-set-balance": "node profit-tracker.js set-balance",
+    "profit-simulate": "node profit-tracker.js simulate",
+    "init-balances": "node balance-init.js init",
+    "update-balances": "node balance-init.js update",
+    "check-balances": "node balance-init.js balances",
+    "reset-profit": "node balance-init.js reset",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joe-burgess/auto-trading-app.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/joe-burgess/auto-trading-app/issues"
+  },
+  "homepage": "https://github.com/joe-burgess/auto-trading-app#readme",
+  "description": "",
+  "dependencies": {
+    "crypto-js": "^4.2.0",
+    "express": "^5.1.0"
+  }
+}
