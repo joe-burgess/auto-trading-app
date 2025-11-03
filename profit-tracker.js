@@ -113,7 +113,17 @@ class ProfitTracker {
    * Record current balance snapshot
    */
   recordBalance(balances, source = 'manual', currentBtcPrice = null) {
-    const totalGbpBalance = balances.GBP?.available || 0;
+    let totalGbpBalance = balances.GBP?.available || 0;
+    
+    // In simulation mode, preserve existing simulated GBP funds for analysis entries
+    if (source === 'analysis' && totalGbpBalance === 0 && this.balanceHistory.length > 0) {
+      const lastRecord = this.balanceHistory[this.balanceHistory.length - 1];
+      if (lastRecord.source === 'simulated_funds_addition' || lastRecord.gbpBalance > 0) {
+        totalGbpBalance = lastRecord.gbpBalance;
+        console.log(`💷 Preserving simulated GBP balance: £${totalGbpBalance}`);
+      }
+    }
+    
     const btcPrice = currentBtcPrice || this.getCurrentBtcPrice();
     const totalBtcValue = (balances.BTC?.available || 0) * btcPrice;
     const totalBalance = totalGbpBalance + totalBtcValue;

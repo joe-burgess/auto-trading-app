@@ -3,6 +3,7 @@ const BTCBuyingSystem = require('./btc-buyer');
 const CoinbaseTrader = require('./btc-trader');
 const ProfitTracker = require('./profit-tracker');
 const TimingController = require('./timing-controller');
+const TelegramNotifier = require('./telegram-notifier');
 
 class UnifiedTradingSystem {
   constructor(config = {}) {
@@ -46,9 +47,26 @@ class UnifiedTradingSystem {
       
       // Monitoring settings
       monitoring: {
-        interval: config.monitoring?.interval || 60000, // 1 minute
+        interval: config.monitoring?.interval || 60000, // 1 minute (fallback)
         enableAlerts: config.monitoring?.enableAlerts !== false,
         logAllDecisions: config.monitoring?.logAllDecisions !== false,
+        
+        // Randomized polling to avoid detection
+        randomPolling: {
+          enabled: config.monitoring?.randomPolling?.enabled !== false, // Enable by default
+          minInterval: config.monitoring?.randomPolling?.minInterval || 2 * 60 * 1000,    // 2 minutes minimum
+          maxInterval: config.monitoring?.randomPolling?.maxInterval || 8 * 60 * 1000,    // 8 minutes maximum
+          minGapBetweenChecks: config.monitoring?.randomPolling?.minGapBetweenChecks || 90 * 1000, // 90 seconds minimum gap
+        },
+        
+        // Telegram price alerts
+        telegramAlerts: {
+          enabled: config.monitoring?.telegramAlerts?.enabled !== false,
+          priceDropAlert: config.monitoring?.telegramAlerts?.priceDropAlert || 81000,   // Alert when BTC drops to £81,000
+          priceRiseAlert: config.monitoring?.telegramAlerts?.priceRiseAlert || 85000,   // Alert when BTC rises to £85,000
+          significantDropPercent: config.monitoring?.telegramAlerts?.significantDropPercent || 5, // Alert on 5% drops
+          significantRisePercent: config.monitoring?.telegramAlerts?.significantRisePercent || 5  // Alert on 5% rises
+        },
       },
       
       // Safety limits
@@ -88,6 +106,38 @@ class UnifiedTradingSystem {
     // Initialize timing controller for human-like behavior
     this.timingController = new TimingController(this.config.timing || {});
     
+    // Initialize Telegram notifier if enabled
+    this.telegramNotifier = null;
+    if (this.config.monitoring.telegramAlerts.enabled) {
+      try {
+        // Load Telegram config
+        const fs = require('fs');
+        const path = require('path');
+        const telegramConfigPath = path.join(__dirname, 'config', 'telegram-config.json');
+        
+        if (fs.existsSync(telegramConfigPath)) {
+          const telegramConfig = JSON.parse(fs.readFileSync(telegramConfigPath, 'utf8'));
+          
+          if (telegramConfig.botToken && telegramConfig.chatId && 
+              telegramConfig.botToken !== 'YOUR_BOT_TOKEN_HERE' && 
+              telegramConfig.chatId !== 'YOUR_CHAT_ID_HERE') {
+            
+            this.telegramNotifier = new TelegramNotifier(telegramConfig.botToken, telegramConfig.chatId);
+            console.log('📱 Telegram alerts enabled');
+          } else {
+            console.log('⚠️ Telegram configuration incomplete, continuing without alerts');
+            this.config.monitoring.telegramAlerts.enabled = false;
+          }
+        } else {
+          console.log('⚠️ Telegram config file not found, continuing without alerts');
+          this.config.monitoring.telegramAlerts.enabled = false;
+        }
+      } catch (error) {
+        console.log('⚠️ Telegram setup not configured, continuing without alerts');
+        this.config.monitoring.telegramAlerts.enabled = false;
+      }
+    }
+    
     this.monitoring = false;
     this.lastTradeTime = 0;
     this.lastCheckTime = 0; // Track when we last checked prices
@@ -95,6 +145,273 @@ class UnifiedTradingSystem {
     this.recentLow = Infinity;
     this.buyPrice = 0; // Track average buy price
     this.previousPrice = 0; // Track previous price for change calculation
+    
+    // Price alert tracking
+    this.alertHistory = {
+      lastDropAlert: 0,
+      lastRiseAlert: 0,
+      dailyDrops: 0,
+      dailyRises: 0,
+      lastAlertReset: new Date().toDateString()
+    };
+  }
+
+  /**
+   * Format time duration in a human-readable way
+   */
+  formatTime(milliseconds) {
+    const totalMinutes = Math.round(milliseconds / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    
+    if (hours > 0 && minutes > 0) {
+      return `${hours} hour${hours > 1 ? 's' : ''} ${minutes} minute${minutes > 1 ? 's' : ''}`;
+    } else if (hours > 0) {
+      return `${hours} hour${hours > 1 ? 's' : ''}`;
+    } else {
+      return `${minutes} minute${minutes > 1 ? 's' : ''}`;
+    }
+  }
+
+  /**
+   * Enhanced price alerts with multi-threshold support
+   */
+  async checkPriceAlerts(currentPrice, priceChangePercent) {
+    if (!this.config.monitoring.telegramAlerts.enabled || !this.telegramNotifier) {
+      return;
+    }
+    
+    // Load threshold configuration from telegram config
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const telegramConfigPath = path.join(__dirname, 'config', 'telegram-config.json');
+      
+      if (!fs.existsSync(telegramConfigPath)) {
+        console.log('⚠️ Telegram config file not found, using basic alerts');
+        return this.checkBasicPriceAlerts(currentPrice, priceChangePercent);
+      }
+      
+      const telegramConfig = JSON.parse(fs.readFileSync(telegramConfigPath, 'utf8'));
+      const thresholds = telegramConfig.alerts?.priceThresholds;
+      
+      if (!thresholds?.enabled) {
+        return this.checkBasicPriceAlerts(currentPrice, priceChangePercent);
+      }
+      
+      await this.checkMultiThresholdAlerts(currentPrice, priceChangePercent, thresholds);
+      
+    } catch (error) {
+      console.log('⚠️ Error loading threshold config:', error.message);
+      return this.checkBasicPriceAlerts(currentPrice, priceChangePercent);
+    }
+  }
+
+  /**
+   * Check multi-threshold alerts
+   */
+  async checkMultiThresholdAlerts(currentPrice, priceChangePercent, thresholds) {
+    const now = Date.now();
+    
+    // Initialize alert tracking if needed
+    if (!this.thresholdAlertHistory) {
+      this.thresholdAlertHistory = {
+        triggeredDrops: new Set(),
+        triggeredRises: new Set(),
+        lastPercentageAlert: 0,
+        dailyAlerts: 0,
+        lastDayReset: new Date().toDateString()
+      };
+    }
+    
+    // Reset daily counters if new day
+    const today = new Date().toDateString();
+    if (this.thresholdAlertHistory.lastDayReset !== today) {
+      this.thresholdAlertHistory.dailyAlerts = 0;
+      this.thresholdAlertHistory.lastDayReset = today;
+    }
+    
+    // Check drop thresholds
+    if (thresholds.dropThresholds) {
+      for (const threshold of thresholds.dropThresholds) {
+        if (currentPrice <= threshold.price && 
+            !this.thresholdAlertHistory.triggeredDrops.has(threshold.price)) {
+          
+          // Send alert
+          await this.sendThresholdAlert('drop', currentPrice, threshold);
+          this.thresholdAlertHistory.triggeredDrops.add(threshold.price);
+          this.thresholdAlertHistory.dailyAlerts++;
+          
+          // Schedule cooldown reset
+          setTimeout(() => {
+            this.thresholdAlertHistory.triggeredDrops.delete(threshold.price);
+          }, threshold.cooldown || 3600000); // Default 1 hour cooldown
+        }
+      }
+    }
+    
+    // Check rise thresholds
+    if (thresholds.riseThresholds) {
+      for (const threshold of thresholds.riseThresholds) {
+        if (currentPrice >= threshold.price && 
+            !this.thresholdAlertHistory.triggeredRises.has(threshold.price)) {
+          
+          // Send alert
+          await this.sendThresholdAlert('rise', currentPrice, threshold);
+          this.thresholdAlertHistory.triggeredRises.add(threshold.price);
+          this.thresholdAlertHistory.dailyAlerts++;
+          
+          // Schedule cooldown reset
+          setTimeout(() => {
+            this.thresholdAlertHistory.triggeredRises.delete(threshold.price);
+          }, threshold.cooldown || 3600000); // Default 1 hour cooldown
+        }
+      }
+    }
+    
+    // Check percentage-based alerts
+    if (thresholds.percentageAlerts?.enabled && Math.abs(priceChangePercent) >= 3) {
+      const percentCooldown = thresholds.percentageAlerts.cooldown || 1800000; // 30 minutes
+      
+      if ((now - this.thresholdAlertHistory.lastPercentageAlert) > percentCooldown) {
+        const isSignificantDrop = priceChangePercent <= -thresholds.percentageAlerts.significantDrop;
+        const isSignificantRise = priceChangePercent >= thresholds.percentageAlerts.significantRise;
+        
+        if (isSignificantDrop || isSignificantRise) {
+          await this.sendPercentageAlert(currentPrice, priceChangePercent, isSignificantDrop);
+          this.thresholdAlertHistory.lastPercentageAlert = now;
+          this.thresholdAlertHistory.dailyAlerts++;
+        }
+      }
+    }
+  }
+
+  /**
+   * Send threshold-based alert
+   */
+  async sendThresholdAlert(type, currentPrice, threshold) {
+    try {
+      const alertData = {
+        type: `threshold_${type}`,
+        price: currentPrice,
+        threshold: threshold.price,
+        priority: threshold.priority || 'medium',
+        message: threshold.message || `BTC ${type} alert: £${currentPrice.toLocaleString()}`,
+        timestamp: new Date().toISOString()
+      };
+      
+      await this.telegramNotifier.sendPriceAlert(alertData);
+      console.log(`📱 ${threshold.priority?.toUpperCase() || 'MEDIUM'} Alert sent: ${threshold.message}`);
+      
+    } catch (error) {
+      console.error('❌ Failed to send threshold alert:', error.message);
+    }
+  }
+
+  /**
+   * Send percentage-based alert
+   */
+  async sendPercentageAlert(currentPrice, percentChange, isDrop) {
+    try {
+      const direction = isDrop ? 'dropped' : 'rose';
+      const emoji = isDrop ? '📉' : '📈';
+      const message = `${emoji} BTC ${direction} ${Math.abs(percentChange).toFixed(1)}% to £${currentPrice.toLocaleString()}`;
+      
+      const alertData = {
+        type: isDrop ? 'significant_drop' : 'significant_rise',
+        price: currentPrice,
+        percentChange: percentChange,
+        message: message,
+        priority: Math.abs(percentChange) >= 10 ? 'urgent' : 'high',
+        timestamp: new Date().toISOString()
+      };
+      
+      await this.telegramNotifier.sendPriceAlert(alertData);
+      console.log(`📱 Percentage Alert sent: ${message}`);
+      
+    } catch (error) {
+      console.error('❌ Failed to send percentage alert:', error.message);
+    }
+  }
+
+  /**
+   * Fallback to basic price alerts (original system)
+   */
+  async checkBasicPriceAlerts(currentPrice, priceChangePercent) {
+    if (!this.config.monitoring.telegramAlerts.enabled || !this.telegramNotifier) {
+      return;
+    }
+    
+    const today = new Date().toDateString();
+    
+    // Reset daily counters if new day
+    if (this.alertHistory.lastAlertReset !== today) {
+      this.alertHistory.dailyDrops = 0;
+      this.alertHistory.dailyRises = 0;
+      this.alertHistory.lastAlertReset = today;
+    }
+    
+    const config = this.config.monitoring.telegramAlerts;
+    const cooldownPeriod = 30 * 60 * 1000; // 30 minutes between similar alerts
+    const now = Date.now();
+    
+    try {
+      // Check for specific price threshold alerts
+      if (currentPrice <= config.priceDropAlert && 
+          (now - this.alertHistory.lastDropAlert) > cooldownPeriod) {
+        
+        await this.telegramNotifier.sendPriceAlert({
+          type: 'threshold_drop',
+          price: currentPrice,
+          threshold: config.priceDropAlert,
+          message: `🚨 BTC Price Alert! Bitcoin has dropped to £${currentPrice.toLocaleString()}\n\nThis is at your £${config.priceDropAlert.toLocaleString()} alert threshold. Consider your trading strategy.`
+        });
+        
+        this.alertHistory.lastDropAlert = now;
+        this.alertHistory.dailyDrops++;
+        console.log(`📱 Sent Telegram price drop alert: £${currentPrice.toLocaleString()}`);
+      }
+      
+      if (currentPrice >= config.priceRiseAlert && 
+          (now - this.alertHistory.lastRiseAlert) > cooldownPeriod) {
+        
+        await this.telegramNotifier.sendPriceAlert({
+          type: 'threshold_rise',
+          price: currentPrice,
+          threshold: config.priceRiseAlert,
+          message: `📈 BTC Price Alert! Bitcoin has risen to £${currentPrice.toLocaleString()}\n\nThis is at your £${config.priceRiseAlert.toLocaleString()} alert threshold. Consider your trading strategy.`
+        });
+        
+        this.alertHistory.lastRiseAlert = now;
+        this.alertHistory.dailyRises++;
+        console.log(`📱 Sent Telegram price rise alert: £${currentPrice.toLocaleString()}`);
+      }
+      
+      // Check for significant percentage changes
+      if (Math.abs(priceChangePercent) >= config.significantDropPercent && this.previousPrice > 0) {
+        const alertType = priceChangePercent < 0 ? 'significant_drop' : 'significant_rise';
+        const lastAlertKey = priceChangePercent < 0 ? 'lastDropAlert' : 'lastRiseAlert';
+        
+        if ((now - this.alertHistory[lastAlertKey]) > cooldownPeriod) {
+          const emoji = priceChangePercent < 0 ? '📉' : '📈';
+          const direction = priceChangePercent < 0 ? 'dropped' : 'risen';
+          
+          await this.telegramNotifier.sendPriceAlert({
+            type: alertType,
+            price: currentPrice,
+            previousPrice: this.previousPrice,
+            changePercent: priceChangePercent,
+            message: `${emoji} Significant Price Movement!\n\nBTC has ${direction} by ${Math.abs(priceChangePercent).toFixed(2)}%\nFrom £${this.previousPrice.toLocaleString()} to £${currentPrice.toLocaleString()}`
+          });
+          
+          this.alertHistory[lastAlertKey] = now;
+          console.log(`📱 Sent significant ${direction} alert: ${priceChangePercent.toFixed(2)}%`);
+        }
+      }
+      
+    } catch (error) {
+      console.log('⚠️ Failed to send Telegram alert:', error.message);
+    }
   }
 
   /**
@@ -131,6 +448,11 @@ class UnifiedTradingSystem {
       const priceChange = this.previousPrice > 0 ? priceData.price - this.previousPrice : 0;
       const priceChangePercent = this.previousPrice > 0 ? ((priceChange / this.previousPrice) * 100) : 0;
       
+      // Check for price alerts (only if we have a previous price to compare)
+      if (this.previousPrice > 0) {
+        await this.checkPriceAlerts(priceData.price, priceChangePercent);
+      }
+      
       // Update price tracking
       if (priceData.price > this.recentHigh) {
         this.recentHigh = priceData.price;
@@ -142,6 +464,7 @@ class UnifiedTradingSystem {
       const analysis = {
         timestamp: new Date().toISOString(),
         price: priceData.price,
+        priceData: priceData,  // Include full price data for timing controller
         priceChange: priceChange,
         priceChangePercent: priceChangePercent,
         previousPrice: this.previousPrice,
@@ -181,12 +504,32 @@ class UnifiedTradingSystem {
           ? ` (${priceDirection} ${priceChange >= 0 ? '+' : ''}£${priceChange.toFixed(2)} / ${priceChangePercent >= 0 ? '+' : ''}${priceChangePercent.toFixed(2)}%)`
           : '';
         
-        // Get initial balance for comparison
-        const initialBalance = this.profitTracker.config.initialBalance || 50.012315;
+        // Get initial balance for comparison  
+        const initialBalance = this.profitTracker.config.initialBalance || 250.00;
+        
+        // Get baseline values from the reset record (first balance record)
+        const firstBalanceRecord = this.profitTracker.balanceHistory.length > 0 
+          ? this.profitTracker.balanceHistory[0] 
+          : null;
+          
+        let baselineBtcValue, baselineBtcPrice;
+        if (firstBalanceRecord && firstBalanceRecord.source === 'automated-reset' && firstBalanceRecord.resetBaseline) {
+          // Use the stored baseline from reset
+          baselineBtcValue = firstBalanceRecord.resetBaseline.btcBaselineValue;
+          baselineBtcPrice = firstBalanceRecord.resetBaseline.btcBaselinePrice;
+        } else {
+          // Fallback for older resets without baseline tracking
+          baselineBtcValue = firstBalanceRecord ? firstBalanceRecord.btcValueInGbp : 200.00;
+          baselineBtcPrice = firstBalanceRecord ? firstBalanceRecord.btcPrice : 20000;
+        }
+          
         const currentBtcValue = balances.BTC?.available * priceData.price || 0;
         const btcHoldings = balances.BTC?.available || 0;
         const gbpHoldings = balances.GBP?.available || 0;
-        const valueIncrease = currentBtcValue - initialBalance;
+        
+        // Calculate appreciation from baseline
+        const btcAppreciation = currentBtcValue - baselineBtcValue;
+        const valueIncrease = btcAppreciation; // Only show appreciation from baseline
         const btcIncrease = 0; // No BTC quantity changes yet (only price appreciation)
         
         // Check current trading status with emergency override consideration
@@ -205,7 +548,7 @@ class UnifiedTradingSystem {
         console.log(`[${new Date().toLocaleTimeString()}] 📊 Analysis:`, {
           price: `£${priceData.price.toLocaleString()}${changeStr}`,
           holdings: {
-            btc: `${btcHoldings} BTC (£${currentBtcValue.toFixed(2)})`,
+            btc: `${btcHoldings} BTC (£${baselineBtcValue.toFixed(2)} + £${btcAppreciation.toFixed(2)} appreciation)`,
             gbp: `£${gbpHoldings.toFixed(2)}`,
             btcIncrease: `+${btcIncrease.toFixed(8)} BTC`,
             valueIncrease: `+£${valueIncrease.toFixed(2)}`
@@ -326,7 +669,7 @@ class UnifiedTradingSystem {
             'buy_' + Date.now(),
             buyAction,
             'buy',
-            priceData
+            analysis.priceData
           );
           
           if (scheduled) {
@@ -361,7 +704,7 @@ class UnifiedTradingSystem {
             'sell_' + Date.now(),
             sellAction,
             'sell',
-            priceData
+            analysis.priceData
           );
           
           if (scheduled) {
@@ -399,8 +742,17 @@ class UnifiedTradingSystem {
     console.log(`   Max buy: £${this.config.buying.maxBuyAmount}`);
     console.log(`   Max sell: ${this.config.selling.maxSellAmount} BTC`);
     console.log(`   Post-sell drop threshold: £${this.config.buying.postSellDropThreshold}`);
-    console.log(`   Monitoring interval: ${this.config.monitoring.interval / 1000}s`);
+    if (this.config.monitoring.randomPolling.enabled) {
+      const minMins = this.config.monitoring.randomPolling.minInterval / 60000;
+      const maxMins = this.config.monitoring.randomPolling.maxInterval / 60000;
+      console.log(`   Monitoring interval: ${minMins}-${maxMins} minutes (randomized)`);
+    } else {
+      console.log(`   Monitoring interval: ${this.config.monitoring.interval / 1000}s`);
+    }
     console.log(`   Manual approval: ${this.config.safety.requireManualApproval ? 'Required' : 'Automatic'}`);
+    if (this.config.monitoring.telegramAlerts.enabled) {
+      console.log(`   📱 Telegram alerts: Drop £${this.config.monitoring.telegramAlerts.priceDropAlert.toLocaleString()} / Rise £${this.config.monitoring.telegramAlerts.priceRiseAlert.toLocaleString()}`);
+    }
     console.log('────────────────────────────────\n');
 
     this.monitoring = true;
@@ -443,14 +795,17 @@ class UnifiedTradingSystem {
       
       const hours = (randomInterval / 3600000).toFixed(1);
       
+      // Format time in a more readable way
+      const timeStr = this.formatTime(randomInterval);
+      
       // Check if next execution will be during trading hours
       const nextExecutionTime = Date.now() + randomInterval;
       const willBeTradingHours = this.timingController.isTradingAllowedAt(nextExecutionTime);
       
       if (willBeTradingHours) {
-        console.log(`🤖 Next trading evaluation in ${hours} hours ✅ (during trading hours)`);
+        console.log(`🤖 Next trading evaluation in ${timeStr} ✅ (during trading hours)`);
       } else {
-        console.log(`🤖 Next trading evaluation in ${hours} hours ⏸️ (outside trading hours - will queue)`);
+        console.log(`🤖 Next trading evaluation in ${timeStr} ⏸️ (outside trading hours - will queue)`);
       }
       
     } else {
@@ -463,10 +818,12 @@ class UnifiedTradingSystem {
       const nextExecutionTime = Date.now() + randomInterval;
       const willBeTradingHours = this.timingController.isTradingAllowedAt(nextExecutionTime);
       
+      const timeStr = this.formatTime(randomInterval);
+      
       if (willBeTradingHours) {
-        console.log(`🤖 Next trading evaluation in ${Math.round(randomInterval/1000)}s ✅ (during trading hours)`);
+        console.log(`🤖 Next trading evaluation in ${timeStr} ✅ (during trading hours)`);
       } else {
-        console.log(`🤖 Next trading evaluation in ${Math.round(randomInterval/1000)}s ⏸️ (outside trading hours - will queue)`);
+        console.log(`🤖 Next trading evaluation in ${timeStr} ⏸️ (outside trading hours - will queue)`);
       }
     }
     
@@ -608,6 +965,21 @@ if (require.main === module) {
       }).catch(console.error);
       break;
 
+    case 'test-alerts':
+      if (trader.telegramNotifier) {
+        console.log('🧪 Testing Telegram alerts...');
+        trader.telegramNotifier.testConnection().then(success => {
+          if (success) {
+            console.log('✅ Telegram connection successful! Alerts are ready.');
+          } else {
+            console.log('❌ Telegram connection failed. Check your configuration.');
+          }
+        }).catch(console.error);
+      } else {
+        console.log('⚠️ Telegram alerts not enabled or configured');
+      }
+      break;
+
     case 'once':
       trader.executeAutomatedTrading().then(executed => {
         console.log(`Trade executed: ${executed ? 'Yes' : 'No'}`);
@@ -622,6 +994,7 @@ Commands:
   start                Start automated trading (Ctrl+C to stop)
   status              Show current trading status
   analyze             Analyze current trading opportunity
+  test-alerts         Test Telegram alert connection
   once                Execute one trading cycle
 
 Configuration:

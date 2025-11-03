@@ -15,6 +15,14 @@ A comprehensive Bitcoin automated trading system with buy-low-sell-high strategy
 - **Profit Tracking**: Alert when you've made £10+ profit (configurable)
 - **Safety Controls**: Daily limits, cooldowns, and manual approval options
 
+📱 **Enhanced Telegram Alerts (NEW!)**
+- **Multi-threshold system**: Set multiple price levels (e.g., £82K, £81K, £80K)
+- **Smart priority levels**: Medium, High, Urgent with different cooldowns
+- **Percentage movement alerts**: ±5% significant price changes
+- **Trade confirmations**: Get notified of all buy/sell executions
+- **Easy management**: Add/remove thresholds with simple commands
+- **Anti-spam cooldowns**: Prevent alert fatigue with intelligent timing
+
 ⚠️ **Smart Alerts**
 - Price threshold alerts (e.g., £400 increase/decrease)
 - Percentage change alerts (e.g., 2% up/down)
@@ -129,21 +137,42 @@ cp .env.template .env
 
 ## Quick Start
 
-### 1. Get Current BTC Price (One-time)
+### 1. Setup Telegram Alerts (5 minutes) 📱
 ```bash
-npm run btc-price
+# Get your chat ID (after messaging your bot)
+npm run get-chat-id
+
+# Quick setup with common thresholds
+npm run setup-thresholds
+
+# Test your setup
+npm run test-telegram-alerts
+```
+**📖 Full Setup Guide**: See [TELEGRAM_SETUP.md](TELEGRAM_SETUP.md) for complete instructions
+
+### 2. Start Auto-Trading 🤖
+```bash
+npm run auto-trade
+```
+Includes automated buy/sell, profit tracking, and Telegram alerts!
+
+### 3. Manual Trading Tools 🛠️
+```bash
+npm run emergency-buy-check    # Manual buy opportunities
+npm run manual-sell-check      # Manual sell opportunities  
+npm run show-balance          # Check current balance
 ```
 
-### 2. Start Price Monitoring
+### 4. Threshold Management 🎯
 ```bash
-npm run btc-monitor
+npm run show-thresholds       # View current alerts
+npm run manage-thresholds     # Advanced management
 ```
-This starts continuous monitoring with alerts. Press `Ctrl+C` to stop.
 
-### 3. View Price Statistics
+### 5. Basic Price Monitoring 📊
 ```bash
-npm run btc-stats        # Last 60 minutes
-node btc-monitor.js stats 30   # Last 30 minutes
+npm run btc-price            # One-time price check
+npm run btc-monitor          # Continuous monitoring
 ```
 
 ### 4. View Price History
@@ -220,6 +249,66 @@ Edit `monitor-config.json` to customize:
    Low:  £55,200
    Change: £425.50 (0.62%)
    Data points: 120
+```
+
+## 📋 Complete Command Reference
+
+### 🤖 Auto-Trading
+```bash
+npm run auto-trade              # Start full automated trading system
+npm run trade-analyze           # Analyze current trading opportunity
+npm run trade-status            # View comprehensive trading status
+```
+
+### 📱 Telegram Alerts
+```bash
+npm run setup-thresholds        # Quick setup with common thresholds
+npm run show-thresholds         # View current threshold configuration
+npm run manage-thresholds       # Advanced threshold management
+npm run test-telegram-alerts    # Test enhanced alert system
+npm run get-chat-id            # Get your Telegram chat ID
+npm run test-telegram          # Basic Telegram connection test
+```
+
+### 🛠️ Manual Trading Tools
+```bash
+npm run emergency-buy-check     # Manual buy opportunity checker
+npm run manual-sell-check       # Manual sell opportunity checker
+npm run show-balance           # Display current balance
+npm run reset-balance          # Reset balance to £50 GBP + £200 BTC
+npm run reset-balance-confirm   # Reset without confirmation
+```
+
+### 📊 Monitoring & Analytics
+```bash
+npm run btc-price              # One-time price check
+npm run btc-monitor            # Continuous price monitoring
+npm run btc-stats              # Price statistics and history
+npm run profit-report          # Comprehensive profit analysis
+```
+
+### ⚙️ System Management  
+```bash
+npm run init-balances          # Initialize balance tracking
+npm run add-simulated-funds    # Add simulated GBP funds
+npm run reset-profit           # Reset profit tracking
+```
+
+### 🎯 Threshold Management Examples
+```bash
+# Add custom drop thresholds
+node manage-thresholds.js add-drop 79000
+node manage-thresholds.js add-drop 77000 --priority urgent --cooldown 15
+
+# Add custom rise thresholds
+node manage-thresholds.js add-rise 100000 --message "🚀 BTC hit £100K!"
+
+# Remove thresholds
+node manage-thresholds.js remove-drop 82000
+node manage-thresholds.js remove-rise 95000
+
+# Show help
+node manage-thresholds.js --help
 ```
 
 ## Data Storage

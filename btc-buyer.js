@@ -224,10 +224,70 @@ class BTCBuyingSystem {
    */
   async getAccountBalances() {
     if (this.config.dryRun) {
-      // Simulated balances: £50 worth of BTC + £0 GBP
+      // In simulation mode, calculate actual balances from buying history
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const balanceHistoryPath = path.join(__dirname, 'data', 'balance-history.json');
+        const buyingLogPath = path.join(__dirname, 'data', 'buying-log.json');
+        
+        let gbpBalance = 0;
+        let btcBalance = 0.00243902; // Current BTC amount after reset (£200 worth)
+        
+        // Get GBP balance from latest balance history (includes simulated funds)
+        if (fs.existsSync(balanceHistoryPath)) {
+          const balanceHistory = JSON.parse(fs.readFileSync(balanceHistoryPath, 'utf8'));
+          if (balanceHistory.length > 0) {
+            const latestBalance = balanceHistory[balanceHistory.length - 1];
+            gbpBalance = latestBalance.gbpBalance || 0;
+          }
+        }
+        
+        // Calculate actual BTC balance by adding all purchases
+        if (fs.existsSync(buyingLogPath)) {
+          const buyingLog = JSON.parse(fs.readFileSync(buyingLogPath, 'utf8'));
+          const totalPurchasedBTC = buyingLog.reduce((total, purchase) => {
+            return total + (purchase.feeCalculation?.actualBtcReceived || 0);
+          }, 0);
+          
+          btcBalance += totalPurchasedBTC;
+          
+          // Also deduct spent GBP from purchases
+          const totalSpentGBP = buyingLog.reduce((total, purchase) => {
+            return total + (purchase.gbpAmount || 0);
+          }, 0);
+          
+          // Only deduct if we haven't already accounted for it in balance history
+          // (This prevents double-deduction when simulated funds are added)
+          if (gbpBalance >= totalSpentGBP) {
+            gbpBalance -= totalSpentGBP;
+          }
+        }
+        
+        // Balance display moved to specific actions to avoid duplicates
+        
+        // Convert to API format
+        return {
+          GBP: { 
+            balance: gbpBalance, 
+            available: gbpBalance, 
+            hold: 0 
+          },
+          BTC: { 
+            balance: btcBalance, 
+            available: btcBalance, 
+            hold: 0 
+          }
+        };
+        
+      } catch (error) {
+        console.log('⚠️ Could not calculate simulated balance:', error.message);
+      }
+      
+      // Fallback to original hardcoded values
       return {
         GBP: { balance: 0, available: 0, hold: 0 },
-        BTC: { balance: 0.00059556, available: 0.00059556, hold: 0 }
+        BTC: { balance: 0.00243902, available: 0.00243902, hold: 0 }
       };
     }
 
@@ -247,6 +307,18 @@ class BTCBuyingSystem {
     } catch (error) {
       throw new Error(`Failed to get account balances: ${error.message}`);
     }
+  }
+
+  /**
+   * Display current simulated balance
+   */
+  async displayBalance() {
+    const balances = await this.getAccountBalances();
+    const gbpBalance = balances.GBP.balance;
+    const btcBalance = balances.BTC.balance;
+    
+    console.log(`💰 Simulated Balance: £${gbpBalance.toFixed(2)} GBP + ${btcBalance.toFixed(8)} BTC`);
+    return balances;
   }
 
   /**
@@ -381,12 +453,18 @@ class BTCBuyingSystem {
   /**
    * Create a market buy order for BTC
    */
-  async createBuyOrder(gbpAmount) {
+  async createBuyOrder(gbpAmount, isEmergency = false) {
     const priceData = await this.getCurrentPrice();
     const feeCalc = this.calculateBuyingFees(gbpAmount, priceData.ask);
     
-    if (gbpAmount > this.config.limits.maxBuyAmount) {
+    // Check limits unless it's an emergency buy
+    if (!isEmergency && gbpAmount > this.config.limits.maxBuyAmount) {
       throw new Error(`Buy amount £${gbpAmount} exceeds maximum limit of £${this.config.limits.maxBuyAmount}`);
+    }
+    
+    // Log if emergency limit bypass is used
+    if (isEmergency && gbpAmount > this.config.limits.maxBuyAmount) {
+      console.log(`⚠️ Emergency buy: Bypassing £${this.config.limits.maxBuyAmount} limit for £${gbpAmount} purchase`);
     }
 
     const order = {
@@ -425,7 +503,7 @@ class BTCBuyingSystem {
   /**
    * Execute automated BTC purchase
    */
-  async executeBTCPurchase(gbpAmount, reason = 'manual') {
+  async executeBTCPurchase(gbpAmount, reason = 'manual', isEmergency = false) {
     const startTime = new Date().toISOString();
     
     try {
@@ -441,7 +519,7 @@ class BTCBuyingSystem {
       this.displayBuyingFeeBreakdown(feeCalculation);
       
       // Execute the buy order
-      const order = await this.createBuyOrder(gbpAmount);
+      const order = await this.createBuyOrder(gbpAmount, isEmergency);
       
       // Record the purchase
       const purchase = {

@@ -72,10 +72,10 @@
     "interval": 60000,
     "randomPolling": {
       "enabled": true,
-      "minInterval": 3600000,
-      "maxInterval": 7200000,
-      "minGapBetweenChecks": 1800000,
-      "comment": "Random polling: 1-2 hours apart, minimum 30min gap"
+      "minInterval": 900000,
+      "maxInterval": 2700000,
+      "minGapBetweenChecks": 600000,
+      "comment": "Random polling: 15-45 minutes apart, minimum 10min gap"
     },
     "enableAlerts": true,
     "logAllDecisions": true,
@@ -104,7 +104,7 @@
   "profitTracking": {
     "enabled": true,
     "profitThreshold": 10,
-    "initialBalance": 50,
+    "initialBalance": 250,
     "alerts": {
       "enabled": true,
       "profitAlert": true,

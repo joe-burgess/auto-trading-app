@@ -1,6 +1,7 @@
 {
   "name": "auto-trading-app",
   "version": "1.0.0",
+  "description": "Comprehensive Bitcoin automated trading system with multi-threshold Telegram alerts, profit tracking, and human-like behavior patterns. Features: Multi-level price alerts (£82K/£81K/£80K), automated buy/sell execution, emergency trading tools, balance management, and anti-detection timing. Full GBP support with Coinbase Pro integration.",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -21,13 +22,26 @@
     "auto-trade": "node unified-trader.js start",
     "trade-status": "node unified-trader.js status",
     "trade-analyze": "node unified-trader.js analyze",
+    "test-telegram-alerts": "node unified-trader.js test-alerts",
+    "manual-sell-check": "node manual-sell-check.js",
+    "emergency-buy-check": "node emergency-buy-check.js",
     "profit-report": "node profit-tracker.js report",
     "profit-set-balance": "node profit-tracker.js set-balance",
     "profit-simulate": "node profit-tracker.js simulate",
     "init-balances": "node balance-init.js init",
     "update-balances": "node balance-init.js update",
     "check-balances": "node balance-init.js balances",
+    "price-alerts": "node price-alert-monitor.js",
+    "test-telegram": "node price-alert-monitor.js --test-telegram",
+    "add-simulated-funds": "node add-simulated-funds.js",
     "reset-profit": "node balance-init.js reset",
+    "reset-balance": "node reset-balance.js",
+    "reset-balance-confirm": "node reset-balance.js --confirm",
+    "show-balance": "node reset-balance.js --show-current",
+    "get-chat-id": "node get-chat-id.js",
+    "manage-thresholds": "node manage-thresholds.js",
+    "show-thresholds": "node manage-thresholds.js show",
+    "setup-thresholds": "node manage-thresholds.js quick-setup",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -41,7 +55,6 @@
     "url": "https://github.com/joe-burgess/auto-trading-app/issues"
   },
   "homepage": "https://github.com/joe-burgess/auto-trading-app#readme",
-  "description": "",
   "dependencies": {
     "crypto-js": "^4.2.0",
     "express": "^5.1.0"

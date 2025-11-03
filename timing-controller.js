@@ -214,6 +214,7 @@ class TimingController {
     this.pendingActions.set(actionId, {
       action,
       type,
+      priceData,  // Store price data for later emergency override check
       scheduledTime: Date.now() + totalDelay,
       hesitated: hesitates
     });
@@ -234,13 +235,13 @@ class TimingController {
     if (!pendingAction) return;
 
     // Double-check trading is still allowed
-    if (!this.isTradingAllowed()) {
+    if (!this.isTradingAllowed(pendingAction.priceData, pendingAction.type)) {
       console.log(`⏸️ Trading no longer allowed - rescheduling ${pendingAction.type}`);
       this.pendingActions.delete(actionId);
       
       // Reschedule for next trading window
       setTimeout(() => {
-        this.scheduleAction(actionId, pendingAction.action, pendingAction.type);
+        this.scheduleAction(actionId, pendingAction.action, pendingAction.type, pendingAction.priceData);
       }, 3600000); // Check again in 1 hour
       
       return;

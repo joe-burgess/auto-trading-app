@@ -1,0 +1,76 @@
+{
+  "botToken": "8449588768:AAElq5DGe5us9gOJTy7sxaJLhbVnKWhYIqA",
+  "chatId": "5113014648",
+  "alerts": {
+    "enabled": true,
+    "priceAlerts": true,
+    "tradeConfirmations": true,
+    "profitMilestones": true,
+    "priceThresholds": {
+      "enabled": true,
+      "dropThresholds": [
+        {
+          "price": 82000,
+          "message": "🟡 BTC Alert: Price dropped to £82,000",
+          "priority": "medium",
+          "cooldown": 3600000
+        },
+        {
+          "price": 81000,
+          "message": "🟠 BTC Alert: Price dropped to £81,000 - Consider buying opportunity",
+          "priority": "high",
+          "cooldown": 3600000
+        },
+        {
+          "price": 80000,
+          "message": "🔴 BTC URGENT: Price dropped to £80,000 - Major buying opportunity!",
+          "priority": "urgent",
+          "cooldown": 1800000
+        }
+      ],
+      "riseThresholds": [
+        {
+          "price": 85000,
+          "message": "🟢 BTC Alert: Price rose to £85,000",
+          "priority": "medium",
+          "cooldown": 3600000
+        },
+        {
+          "price": 90000,
+          "message": "🚀 BTC Alert: Price rose to £90,000 - Consider selling",
+          "priority": "high",
+          "cooldown": 3600000
+        },
+        {
+          "price": 95000,
+          "message": "💰 BTC SURGE: Price rose to £95,000 - Take profits?",
+          "priority": "urgent",
+          "cooldown": 1800000
+        }
+      ],
+      "percentageAlerts": {
+        "enabled": true,
+        "significantDrop": 5,
+        "significantRise": 5,
+        "cooldown": 1800000
+      }
+    }
+  },
+  "settings": {
+    "timezone": "Europe/London",
+    "priceFormat": "GBP",
+    "includeCharts": false
+  },
+  "instructions": {
+    "setup": [
+      "1. Message @BotFather on Telegram",
+      "2. Type /newbot and follow instructions",
+      "3. Copy the bot token and paste above",
+      "4. Message your bot once to start a chat",
+      "5. Visit https://api.telegram.org/bot<TOKEN>/getUpdates",
+      "6. Find your chat_id in the response and paste above"
+    ],
+    "example_token": "123456789:ABCdefGHIjklMNOpqrsTUVwxyz",
+    "example_chat_id": "123456789"
+  }
+}
