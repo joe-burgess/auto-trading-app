@@ -6,12 +6,25 @@
     "priceAlerts": true,
     "tradeConfirmations": true,
     "profitMilestones": true,
+    "manualApproval": {
+      "enabled": true,
+      "requireBuyApproval": true,
+      "requireSellApproval": true,
+      "timeoutMinutes": 15,
+      "comment": "When enabled, trades require Telegram approval before execution"
+    },
     "priceThresholds": {
       "enabled": true,
       "dropThresholds": [
         {
           "price": 82000,
           "message": "🟡 BTC Alert: Price dropped to £82,000",
+          "priority": "medium",
+          "cooldown": 3600000
+        },
+        {
+          "price": 81500,
+          "message": "🟠 BTC Alert: Price dropped to £81,500",
           "priority": "medium",
           "cooldown": 3600000
         },
@@ -29,6 +42,18 @@
         }
       ],
       "riseThresholds": [
+        {
+          "price": 82500,
+          "message": "🟢 BTC Alert: Price rose to £82,500",
+          "priority": "medium",
+          "cooldown": 3600000
+        },
+        {
+          "price": 83000,
+          "message": "🟢 BTC Alert: Price rose to £83,000",
+          "priority": "medium",
+          "cooldown": 3600000
+        },
         {
           "price": 85000,
           "message": "🟢 BTC Alert: Price rose to £85,000",

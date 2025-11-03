@@ -13,9 +13,18 @@ class TelegramNotifier {
     const payload = {
       chat_id: this.chatId,
       text: text,
-      parse_mode: 'HTML',
       ...options
     };
+    
+    // Only add parse_mode if not explicitly disabled and not already set
+    if (options.parse_mode !== false && !options.hasOwnProperty('parse_mode')) {
+      payload.parse_mode = 'HTML';
+    }
+    
+    // Remove parse_mode if it's explicitly set to false
+    if (options.parse_mode === false) {
+      delete payload.parse_mode;
+    }
 
     return new Promise((resolve, reject) => {
       const data = JSON.stringify(payload);
@@ -72,7 +81,11 @@ ${type === 'drop' ? '💡 This might be a buying opportunity!' : '💡 Consider 
     return this.sendMessage(message);
   }
 
-  async sendBuyConfirmation(amount, price) {
+  async sendBuyConfirmation(amount, price, autoApproval = false) {
+    if (autoApproval) {
+      return this.sendBuyNotification(amount, price, 'executed');
+    }
+    
     const message = `
 🚨 <b>BUY OPPORTUNITY DETECTED</b> 🚨
 
@@ -82,6 +95,61 @@ ${type === 'drop' ? '💡 This might be a buying opportunity!' : '💡 Consider 
 
 <b>Would you like to proceed?</b>
 Reply with /buy_yes or /buy_no
+    `.trim();
+
+    return this.sendMessage(message);
+  }
+
+  async sendBuyNotification(amount, price, status = 'executed') {
+    const emoji = status === 'executed' ? '✅' : '⏳';
+    const statusText = status === 'executed' ? 'EXECUTED' : 'PENDING';
+    
+    const message = `
+${emoji} <b>BUY ORDER ${statusText}</b> ${emoji}
+
+💰 Amount: £${amount}
+📈 Price: £${price.toLocaleString()}
+🪙 BTC Acquired: ${(amount / price).toFixed(8)} BTC
+⏰ Time: ${new Date().toLocaleString('en-GB')}
+📊 Trade Type: ${status === 'executed' ? 'Automatic' : 'Manual Approval Required'}
+    `.trim();
+
+    return this.sendMessage(message);
+  }
+
+  async sendSellConfirmation(amount, price, profit, autoApproval = false) {
+    if (autoApproval) {
+      return this.sendSellNotification(amount, price, profit, 'executed');
+    }
+    
+    const message = `
+🚨 <b>SELL OPPORTUNITY DETECTED</b> 🚨
+
+🪙 BTC Amount: ${amount} BTC
+📈 Current Price: £${price.toLocaleString()}
+💰 Estimated Value: £${(amount * price).toFixed(2)}
+💹 Profit: £${profit.toFixed(2)}
+
+<b>Would you like to proceed?</b>
+Reply with /sell_yes or /sell_no
+    `.trim();
+
+    return this.sendMessage(message);
+  }
+
+  async sendSellNotification(amount, price, profit, status = 'executed') {
+    const emoji = status === 'executed' ? '✅' : '⏳';
+    const statusText = status === 'executed' ? 'EXECUTED' : 'PENDING';
+    
+    const message = `
+${emoji} <b>SELL ORDER ${statusText}</b> ${emoji}
+
+🪙 BTC Amount: ${amount} BTC
+📈 Price: £${price.toLocaleString()}
+💰 GBP Received: £${(amount * price).toFixed(2)}
+💹 Profit: £${profit.toFixed(2)}
+⏰ Time: ${new Date().toLocaleString('en-GB')}
+📊 Trade Type: ${status === 'executed' ? 'Automatic' : 'Manual Approval Required'}
     `.trim();
 
     return this.sendMessage(message);

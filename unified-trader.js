@@ -116,13 +116,13 @@ class UnifiedTradingSystem {
         const telegramConfigPath = path.join(__dirname, 'config', 'telegram-config.json');
         
         if (fs.existsSync(telegramConfigPath)) {
-          const telegramConfig = JSON.parse(fs.readFileSync(telegramConfigPath, 'utf8'));
+          this.telegramConfig = JSON.parse(fs.readFileSync(telegramConfigPath, 'utf8'));
           
-          if (telegramConfig.botToken && telegramConfig.chatId && 
-              telegramConfig.botToken !== 'YOUR_BOT_TOKEN_HERE' && 
-              telegramConfig.chatId !== 'YOUR_CHAT_ID_HERE') {
+          if (this.telegramConfig.botToken && this.telegramConfig.chatId && 
+              this.telegramConfig.botToken !== 'YOUR_BOT_TOKEN_HERE' && 
+              this.telegramConfig.chatId !== 'YOUR_CHAT_ID_HERE') {
             
-            this.telegramNotifier = new TelegramNotifier(telegramConfig.botToken, telegramConfig.chatId);
+            this.telegramNotifier = new TelegramNotifier(this.telegramConfig.botToken, this.telegramConfig.chatId);
             console.log('📱 Telegram alerts enabled');
           } else {
             console.log('⚠️ Telegram configuration incomplete, continuing without alerts');
@@ -544,19 +544,75 @@ class UnifiedTradingSystem {
         } else {
           tradingStatus = '⏸️ Queued (Outside Hours)';
         }
+        
+        // Calculate distance to sell trigger
+        const profitTarget = this.config.selling.profitTarget;
+        const profitNeeded = profitTarget - currentProfit;
+        const sellDistance = profitNeeded > 0 
+          ? `£${profitNeeded.toFixed(2)} needed (${((profitNeeded / profitTarget) * 100).toFixed(1)}% to target)`
+          : '✅ Target reached';
+        
+        // Calculate selling fees if we were to sell now
+        const btcValueForFees = btcHoldings * priceData.price;
+        const tradingFee = btcValueForFees * (this.config.fees?.trading?.taker || 0.005); // 0.5% trading fee
+        const spreadCost = btcValueForFees * (this.config.fees?.spread || 0.0025); // 0.25% spread
+        const withdrawalFee = this.config.fees?.withdrawal?.gbp || 0.15; // £0.15 withdrawal
+        const totalFees = tradingFee + spreadCost + withdrawalFee;
+        const netProfit = currentProfit - totalFees;
+        const feeInfo = `£${totalFees.toFixed(2)} fees (${((totalFees / btcValueForFees) * 100).toFixed(2)}%)`;
+        const profitAfterSelling = netProfit > 0 
+          ? `+£${netProfit.toFixed(2)} profit` 
+          : `£${Math.abs(netProfit).toFixed(2)} loss`;
+
+        // Calculate target BTC price needed to achieve £10 profit after fees
+        const targetNetProfit = this.config.selling.profitTarget; // £10
+        const feeRate = (this.config.fees?.trading?.taker || 0.005) + (this.config.fees?.spread || 0.0025); // Combined fee percentage
+        
+        // Required gross profit = target net profit + fees
+        // Since fees depend on sale value, we need to solve: gross_profit - (sale_value * fee_rate + withdrawal_fee) = target_net_profit
+        // Where sale_value = baseline_btc_value + gross_profit
+        // Solving: gross_profit = (target_net_profit + withdrawal_fee + baseline_btc_value * fee_rate) / (1 - fee_rate)
+        const requiredGrossProfit = (targetNetProfit + withdrawalFee + baselineBtcValue * feeRate) / (1 - feeRate);
+        const targetBtcValue = baselineBtcValue + requiredGrossProfit;
+        const targetBtcPrice = targetBtcValue / btcHoldings;
+        
+        const targetPriceInfo = btcHoldings > 0 
+          ? `£${targetBtcPrice.toFixed(2)} BTC price needed (${((targetBtcPrice - priceData.price) / priceData.price * 100).toFixed(1)}% rise)`
+          : 'No BTC to sell';
+
+        // Calculate total GBP amount needed from sale (profit + fees + baseline)
+        const targetSaleAmount = btcHoldings > 0 ? targetBtcValue : 0;
+        const targetSaleInfo = btcHoldings > 0 
+          ? `£${targetSaleAmount.toFixed(2)} sale needed (£${targetNetProfit.toFixed(2)} profit + £${(requiredGrossProfit - targetNetProfit).toFixed(2)} fees + £${baselineBtcValue.toFixed(2)} baseline)`
+          : 'No BTC to sell';
           
-        console.log(`[${new Date().toLocaleTimeString()}] 📊 Analysis:`, {
-          price: `£${priceData.price.toLocaleString()}${changeStr}`,
-          holdings: {
-            btc: `${btcHoldings} BTC (£${baselineBtcValue.toFixed(2)} + £${btcAppreciation.toFixed(2)} appreciation)`,
-            gbp: `£${gbpHoldings.toFixed(2)}`,
-            btcIncrease: `+${btcIncrease.toFixed(8)} BTC`,
-            valueIncrease: `+£${valueIncrease.toFixed(2)}`
-          },
-          profit: `£${currentProfit.toFixed(2)}`,
-          decisions: analysis.decisions,
-          tradingStatus: tradingStatus
-        });
+        console.log(`\n[${new Date().toLocaleTimeString()}] 📊 Trading Analysis:`);
+        console.log('─'.repeat(60));
+        console.log(`💰 Current Price: £${priceData.price.toLocaleString()}${changeStr}`);
+        console.log(`📈 Trading Status: ${tradingStatus}`);
+        console.log('');
+        console.log('📦 Holdings:');
+        console.log(`   ₿ BTC: ${btcHoldings} BTC (£${baselineBtcValue.toFixed(2)} + £${btcAppreciation.toFixed(2)} appreciation)`);
+        console.log(`   💷 GBP: £${gbpHoldings.toFixed(2)}`);
+        console.log(`   📊 Value Change: +£${valueIncrease.toFixed(2)}`);
+        console.log('');
+        console.log('💵 Profit Analysis:');
+        console.log(`   🔄 Current Profit: £${currentProfit.toFixed(2)} (unrealized)`);
+        console.log(`   🎯 ${sellDistance}`);
+        console.log(`   📍 ${targetPriceInfo}`);
+        console.log(`   💰 ${targetSaleInfo}`);
+        console.log('');
+        console.log('💸 Selling Impact:');
+        console.log(`   📋 ${feeInfo}`);
+        console.log(`   💡 Result: ${profitAfterSelling}`);
+        console.log('');
+        console.log('🤖 Decisions:');
+        console.log(`   🛒 Should Buy: ${analysis.decisions.shouldBuy ? '✅ Yes' : '❌ No'}`);
+        console.log(`   💰 Should Sell: ${analysis.decisions.shouldSell ? '✅ Yes' : '❌ No'}`);
+        if (analysis.decisions.reasons && analysis.decisions.reasons.length > 0) {
+          console.log(`   📝 Reasons: ${analysis.decisions.reasons.join(', ')}`);
+        }
+        console.log('─'.repeat(60));
       }
       
       // Update previous price for next comparison
@@ -581,9 +637,17 @@ class UnifiedTradingSystem {
       reasons.push(`Price above £${this.config.selling.priceThreshold.toLocaleString()}`);
     }
     
-    // Profit target reached
-    if (currentProfit >= this.config.selling.profitTarget) {
-      reasons.push(`Profit target £${this.config.selling.profitTarget} reached`);
+    // Calculate fees for net profit calculation
+    const currentBtcValue = balances.BTC?.available * priceData.price || 0;
+    const tradingFee = currentBtcValue * (this.config.fees?.trading?.taker || 0.005);
+    const spreadCost = currentBtcValue * (this.config.fees?.spread || 0.0025);
+    const withdrawalFee = this.config.fees?.withdrawal?.gbp || 0.15;
+    const totalFees = tradingFee + spreadCost + withdrawalFee;
+    const netProfit = currentProfit - totalFees;
+    
+    // Profit target reached (NET profit after fees)
+    if (netProfit >= this.config.selling.profitTarget) {
+      reasons.push(`Net profit target £${this.config.selling.profitTarget} reached (after £${totalFees.toFixed(2)} fees)`);
     }
     
     // BTC holdings profit target (value increase after fees)
@@ -652,17 +716,32 @@ class UnifiedTradingSystem {
       
       // Execute buy if conditions met
       if (analysis.decisions.shouldBuy) {
-        if (this.config.safety.requireManualApproval) {
+        const buyAmount = this.buyer.getRandomizedBuyAmount();
+        const requireManualApproval = this.config.safety.requireManualApproval || 
+          (this.telegramConfig?.alerts?.manualApproval?.enabled && this.telegramConfig?.alerts?.manualApproval?.requireBuyApproval);
+        
+        if (requireManualApproval) {
           console.log('🤖 Buy opportunity detected, but manual approval required');
           console.log('   Reasons:', analysis.decisions.reasons.join(', '));
+          
+          // Send Telegram buy confirmation request
+          if (this.telegramNotifier) {
+            await this.telegramNotifier.sendBuyConfirmation(buyAmount, analysis.priceData.price, false);
+          }
         } else {
           console.log('🛒 Buy opportunity detected - scheduling with human-like timing...');
           const buyAction = async () => {
-            const buyAmount = this.buyer.getRandomizedBuyAmount();
-            return await this.buyer.executeBTCPurchase(
+            const result = await this.buyer.executeBTCPurchase(
               buyAmount, 
               'automated: ' + analysis.decisions.reasons.join(', ')
             );
+            
+            // Send Telegram buy notification
+            if (this.telegramNotifier) {
+              await this.telegramNotifier.sendBuyNotification(buyAmount, analysis.priceData.price, 'executed');
+            }
+            
+            return result;
           };
           
           const scheduled = await this.timingController.scheduleAction(
@@ -680,14 +759,24 @@ class UnifiedTradingSystem {
       
       // Execute sell if conditions met (and we didn't just buy)
       if (analysis.decisions.shouldSell && !executed) {
-        if (this.config.safety.requireManualApproval) {
+        const balances = await this.buyer.getAccountBalances();
+        const sellAmount = this.getRandomizedSellAmount(balances.BTC?.available || 0);
+        const currentProfit = this.profitTracker.getCurrentProfit();
+        const requireManualApproval = this.config.safety.requireManualApproval || 
+          (this.telegramConfig?.alerts?.manualApproval?.enabled && this.telegramConfig?.alerts?.manualApproval?.requireSellApproval);
+        
+        if (requireManualApproval) {
           console.log('🤖 Sell opportunity detected, but manual approval required');
           console.log('   Reasons:', analysis.decisions.reasons.join(', '));
+          
+          // Send Telegram sell confirmation request
+          if (this.telegramNotifier) {
+            await this.telegramNotifier.sendSellConfirmation(sellAmount, analysis.priceData.price, currentProfit, false);
+          }
         } else {
           console.log('💰 Sell opportunity detected - scheduling with human-like timing...');
           
           const sellAction = async () => {
-            const balances = await this.buyer.getAccountBalances();
             const withdrawalOptions = {
               confirmTrade: true,
               withdrawToBank: this.config.selling.autoWithdrawToBank,
@@ -696,8 +785,14 @@ class UnifiedTradingSystem {
               keepMinimumGbpBalance: this.config.selling.keepMinimumGbpBalance
             };
             
-            const sellAmount = this.getRandomizedSellAmount(balances.BTC?.available || 0);
-            return await this.seller.executeBTCtoGBP(sellAmount, withdrawalOptions);
+            const result = await this.seller.executeBTCtoGBP(sellAmount, withdrawalOptions);
+            
+            // Send Telegram sell notification
+            if (this.telegramNotifier) {
+              await this.telegramNotifier.sendSellNotification(sellAmount, analysis.priceData.price, currentProfit, 'executed');
+            }
+            
+            return result;
           };
           
           const scheduled = await this.timingController.scheduleAction(
@@ -754,6 +849,77 @@ class UnifiedTradingSystem {
       console.log(`   📱 Telegram alerts: Drop £${this.config.monitoring.telegramAlerts.priceDropAlert.toLocaleString()} / Rise £${this.config.monitoring.telegramAlerts.priceRiseAlert.toLocaleString()}`);
     }
     console.log('────────────────────────────────\n');
+
+    // Send startup alert via Telegram
+    if (this.telegramNotifier) {
+      // Load alert thresholds from config and telegram-config.json
+      let dropThresholds = [];
+      let riseThresholds = [];
+      let percentDrop = 5;
+      let percentRise = 5;
+      try {
+        const telegramConfig = require('./config/telegram-config.json');
+        const priceThresholds = telegramConfig.alerts?.priceThresholds;
+        if (priceThresholds) {
+          dropThresholds = priceThresholds.dropThresholds?.map(t => `${t.price.toLocaleString()} GBP`) || [];
+          riseThresholds = priceThresholds.riseThresholds?.map(t => `${t.price.toLocaleString()} GBP`) || [];
+          percentDrop = priceThresholds.percentageAlerts?.significantDrop || percentDrop;
+          percentRise = priceThresholds.percentageAlerts?.significantRise || percentRise;
+        }
+      } catch (e) {
+        // fallback to config if telegram-config.json not found
+        dropThresholds = [
+          `${this.config.monitoring.telegramAlerts.priceDropAlert?.toLocaleString?.() || this.config.monitoring.telegramAlerts.priceDropAlert} GBP`
+        ];
+        riseThresholds = [
+          `${this.config.monitoring.telegramAlerts.priceRiseAlert?.toLocaleString?.() || this.config.monitoring.telegramAlerts.priceRiseAlert} GBP`
+        ];
+        percentDrop = this.config.monitoring.telegramAlerts.significantDropPercent || percentDrop;
+        percentRise = this.config.monitoring.telegramAlerts.significantRisePercent || percentRise;
+      }
+
+      const alertSection =
+        `🔔 Alert Thresholds:` +
+        `\n• Drop: ${dropThresholds.join(', ')}` +
+        `\n• Rise: ${riseThresholds.join(', ')}` +
+        `\n• % Drop: ${percentDrop}% | % Rise: ${percentRise}%`;
+
+      const startupMessage = '🚀 Auto-Trading System Started!\n\n' +
+        '📊 Configuration:\n' +
+        `• Buy below: £${this.config.buying.priceThreshold.toLocaleString()}\n` +
+        `• Sell above: £${this.config.selling.priceThreshold.toLocaleString()}\n` +
+        `• Profit target: £${this.config.selling.profitTarget}\n` +
+        `• Max buy: £${this.config.buying.maxBuyAmount}\n` +
+        `• Max sell: ${this.config.selling.maxSellAmount} BTC\n\n` +
+        `⏱️ Monitoring: ${this.config.monitoring.randomPolling.enabled ? `${Math.round(this.config.monitoring.randomPolling.minInterval / 60000)}-${Math.round(this.config.monitoring.randomPolling.maxInterval / 60000)} minutes (randomized)` : `${this.config.monitoring.interval / 1000}s`}\n` +
+        `🔧 Approval: ${this.config.safety.requireManualApproval ? 'Manual Required' : 'Automatic'}\n\n` +
+        alertSection + '\n\n' +
+        '✅ System is monitoring and ready to trade!';
+
+      // Create a minimal startup message that we know works
+      const fullStartupMessage = 
+        `Auto-Trading System Started!\n\n` +
+        `Configuration:\n` +
+        `- Buy below: ${this.config.buying.priceThreshold.toLocaleString()} GBP\n` +
+        `- Sell above: ${this.config.selling.priceThreshold.toLocaleString()} GBP\n` +
+        `- Profit target: ${this.config.selling.profitTarget} GBP\n` +
+        `- Max buy: ${this.config.buying.maxBuyAmount} GBP\n` +
+        `- Max sell: ${this.config.selling.maxSellAmount} BTC\n\n` +
+        `Alert Thresholds:\n` +
+        `- Drop: ${dropThresholds.join(', ')}\n` +
+        `- Rise: ${riseThresholds.join(', ')}\n` +
+        `- Drop %: ${percentDrop}% | Rise %: ${percentRise}%\n\n` +
+        `System is monitoring and ready to trade!`;
+
+      // Send startup alert asynchronously
+      if (fullStartupMessage && typeof fullStartupMessage === 'string' && fullStartupMessage.trim().length > 0) {
+        this.telegramNotifier.sendMessage(fullStartupMessage.trim())
+          .then(() => console.log('📱 Startup alert sent to Telegram'))
+          .catch(error => console.log('⚠️ Could not send startup alert:', error.message));
+      } else {
+        console.log('⚠️ Startup alert not sent: message was empty or invalid.');
+      }
+    }
 
     this.monitoring = true;
     
@@ -849,6 +1015,15 @@ class UnifiedTradingSystem {
     if (this.monitoringTimeout) {
       clearTimeout(this.monitoringTimeout);
       this.monitoringTimeout = null;
+    }
+    
+    // Send shutdown alert via Telegram
+    if (this.telegramNotifier) {
+      const shutdownMessage = `🛑 Auto-Trading System Stopped\n\n✅ System has been safely shut down.\n\n⚠️ Trading is no longer active - manual intervention required for trades.`;
+      
+      this.telegramNotifier.sendMessage(shutdownMessage)
+        .then(() => console.log('📱 Shutdown alert sent to Telegram'))
+        .catch(error => console.log('⚠️ Could not send shutdown alert:', error.message));
     }
     
     console.log('✅ Automated trading stopped');
@@ -955,13 +1130,7 @@ if (require.main === module) {
 
     case 'analyze':
       trader.analyzeTradingOpportunity().then(analysis => {
-        if (analysis) {
-          console.log('📊 Current Trading Analysis:');
-          console.log(`   Price: £${analysis.price.toLocaleString()}`);
-          console.log(`   Should Buy: ${analysis.decisions.shouldBuy ? '✅' : '❌'}`);
-          console.log(`   Should Sell: ${analysis.decisions.shouldSell ? '✅' : '❌'}`);
-          console.log(`   Reasons: ${analysis.decisions.reasons.join(', ') || 'None'}`);
-        }
+        // Analysis is now displayed in the detailed format above
       }).catch(console.error);
       break;
 

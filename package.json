@@ -42,6 +42,13 @@
     "manage-thresholds": "node manage-thresholds.js",
     "show-thresholds": "node manage-thresholds.js show",
     "setup-thresholds": "node manage-thresholds.js quick-setup",
+    "manage-approval": "node manage-manual-approval.js",
+    "show-approval": "node manage-manual-approval.js show",
+    "enable-manual": "node manage-manual-approval.js enable",
+    "disable-manual": "node manage-manual-approval.js disable",
+    "manage-profit": "node manage-profit-target.js",
+    "show-profit": "node manage-profit-target.js show",
+    "set-profit": "node manage-profit-target.js set",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
